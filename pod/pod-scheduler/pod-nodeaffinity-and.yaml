@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-nodeaffinity-and
+  namespace: pod-scheduler
+spec:
+  containers:
+  - name: nginx
+    image: shixiaochuangk8s/nginx:1.17.1
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: nodeenv
+            operator: In
+            values: ["pro"]
+          - key: disktype
+            operator: In
+            values: ["ssd"]

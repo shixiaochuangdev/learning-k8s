@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-noexecute
+  namespace: pod-scheduler
+spec:
+  nodeName: work01.shixiaochuang.org
+  containers:
+  - name: nginx
+    # 强制调度到 work01（绕过调度器）
+    image: shixiaochuangk8s/nginx:1.17.1

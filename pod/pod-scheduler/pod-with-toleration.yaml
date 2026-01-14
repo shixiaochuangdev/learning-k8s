@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-with-toleration
+  namespace: pod-scheduler
+spec:
+  nodeName: work01.shixiaochuang.org
+  containers:
+  - name: nginx
+    image: shixiaochuangk8s/nginx:1.17.1
+  tolerations:
+  - key: "env"
+    operator: "Equal"
+    value: "dev"
+    effect: "NoExecute"   # 或 PreferNoSchedule / NoExecute

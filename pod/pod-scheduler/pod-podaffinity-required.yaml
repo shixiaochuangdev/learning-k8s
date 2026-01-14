@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-podaffinity-required
+  namespace: pod-scheduler
+spec:
+  containers:
+  - name: nginx
+    image: shixiaochuangk8s/nginx:1.17.1
+  affinity:
+    # Pod 亲和性规则（表示该 Pod 希望与具有某些标签的其他 Pod 运行在同一拓扑域中）
+    podAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution: # 硬限制
+      # 定义一组亲和性匹配规则
+      - labelSelector:
+          matchExpressions:
+          - key: podenv
+            operator: In
+            values: ["xxx","yyy"]
+        # 拓扑域键，用于定义“同一区域”的范围；此处表示必须与匹配的 Pod 在同一个节点上（hostname 相同）
+        topologyKey: kubernetes.io/hostname
