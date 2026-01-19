@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pv-local-pod
+  namespace: volume-ns
+spec:
+  volumes:
+    - name: example-pv-local
+      persistentVolumeClaim:
+        claimName: pvc-local
+  containers:
+    - name: example-pv-local
+      image: shixiaochuangk8s/nginx:1.17.2
+      ports:
+        - containerPort: 80
+      volumeMounts:
+        - mountPath: /usr/share/nginx/html
+          name: example-pv-local
