@@ -1,0 +1,16 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: rewrite-demo-route
+  namespace: traefik-ns
+spec:
+  entryPoints:
+    - web
+  routes:
+  - match: Host(`rewrite.shixiaochuang.org`) && PathPrefix(`/`)
+    kind: Rule
+    services:
+    - name: service-rewrite-demo
+      port: 80
+    middlewares:
+    - name: rewrite-to-api   # 引用上面的中间件

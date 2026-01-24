@@ -1,0 +1,17 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ingressrouteweblb
+  namespace: traefik-ns
+
+spec:
+  entryPoints:
+    - web
+  routes:
+  - match: Host(`lb.shixiaochuang.org`) && PathPrefix(`/`)
+    kind: Rule
+    services:
+    - name: svc1
+      port: 80
+    - name: svc2
+      port: 80

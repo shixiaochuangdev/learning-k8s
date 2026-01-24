@@ -1,0 +1,16 @@
+apiVersion: traefik.io/v1alpha1
+kind: TraefikService
+metadata:
+  name: wrr
+  namespace: traefik-ns
+
+spec:
+  weighted:
+    services:
+      - name: svc1
+        port: 80
+        weight: 3          # 定义权重
+        kind: Service      # 可选，默认就是 Service
+      - name: svc2
+        port: 80
+        weight: 1

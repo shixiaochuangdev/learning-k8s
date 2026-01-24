@@ -1,0 +1,14 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: mirror-route
+  namespace: traefik-ns
+spec:
+  entryPoints:
+    - web
+  routes:
+  - match: Host(`mirror.shixiaochuang.org`) && PathPrefix(`/`)
+    kind: Rule
+    services:
+      - name: mirror-service
+        kind: TraefikService

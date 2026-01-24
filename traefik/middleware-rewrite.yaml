@@ -1,0 +1,11 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rewrite-to-api
+  namespace: traefik-ns
+spec:
+  # 使用 replacePathRegex 实现正则重写
+  replacePathRegex:
+    # 将 /hello 重写为 /api/v1/hello
+    regex: ^/hello$
+    replacement: /api/v1/hello

@@ -1,0 +1,118 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mirror-nginx-config-v1
+  namespace: traefik-ns
+data:
+  default.conf: |
+    server {
+        listen 80;
+        location / {
+            return 200 "Hello from v1!\n";
+            add_header Content-Type text/plain;
+        }
+    }
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mirror-nginx-config-v2
+  namespace: traefik-ns
+data:
+  default.conf: |
+    server {
+        listen 80;
+        location / {
+            return 200 "Hello from v2! (SHADOW)\n";
+            add_header Content-Type text/plain;
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-v1
+  namespace: traefik-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mirror-demo
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: mirror-demo
+        version: v1
+    spec:
+      containers:
+        - name: nginx
+          image: shixiaochuangk8s/nginx:1.15-alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-conf
+              mountPath: /etc/nginx/conf.d
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: mirror-nginx-config-v1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-v2
+  namespace: traefik-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mirror-demo
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: mirror-demo
+        version: v2
+    spec:
+      containers:
+        - name: nginx
+          image: shixiaochuangk8s/nginx:1.15-alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-conf
+              mountPath: /etc/nginx/conf.d
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: mirror-nginx-config-v2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-v1
+  namespace: traefik-ns
+spec:
+  selector:
+    app: mirror-demo
+    version: v1
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-v2
+  namespace: traefik-ns
+spec:
+  selector:
+    app: mirror-demo
+    version: v2
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80

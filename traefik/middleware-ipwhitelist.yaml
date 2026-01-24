@@ -1,0 +1,12 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: gs-ipwhitelist
+  namespace: traefik-ns
+spec:
+  ipWhiteList:
+    sourceRange:
+      - 127.0.0.1
+      - 10.244.0.0/16
+      - 10.96.0.0/12
+      - 192.168.200.0/24

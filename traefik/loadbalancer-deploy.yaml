@@ -1,0 +1,49 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: nginx-web1
+  namespace: traefik-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: v1
+  template:
+    metadata:
+      labels:
+        app: v1
+    spec:
+      containers:
+        - name: nginx-web-c
+          image: shixiaochuangk8s/nginx:1.15-alpine
+          lifecycle:
+            postStart:
+              exec:
+                command:  ["/bin/sh", "-c", "echo svc1 > /usr/share/nginx/html/index.html"]
+          ports:
+            - containerPort: 80
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: nginx-web2
+  namespace: traefik-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: v2
+  template:
+    metadata:
+      labels:
+        app: v2
+    spec:
+      containers:
+        - name: nginx-web-c
+          image: shixiaochuangk8s/nginx:1.15-alpine
+          lifecycle:
+            postStart:
+              exec:
+                command:  ["/bin/sh", "-c", "echo svc2 > /usr/share/nginx/html/index.html"]
+          ports:
+            - containerPort: 80

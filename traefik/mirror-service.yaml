@@ -1,0 +1,13 @@
+apiVersion: traefik.io/v1alpha1
+kind: TraefikService
+metadata:
+  name: mirror-service
+  namespace: traefik-ns
+spec:
+  mirroring:
+    name: service-v1    # 主服务（完整接收流量）
+    port: 80
+    mirrors:
+      - name: service-v2  # 副本「镜像」服务
+        port: 80
+        percent: 100      # 镜像 100% 副本流量

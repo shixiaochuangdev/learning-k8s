@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: whoamiudp
+  namespace: traefik-ns
+spec:
+  ports:
+    - protocol: UDP
+      name: udp
+      port: 8080
+  selector:
+    app: whoamiudp
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: whoamiudp
+  namespace: traefik-ns
+  labels:
+    app: whoamiudp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: whoamiudp
+  template:
+    metadata:
+      labels:
+        app: whoamiudp
+    spec:
+      containers:
+        - name: whoamiudp
+          image: shixiaochuangk8s/traefik-whoamiudp:v0.2.3
+          ports:
+            - name: udp
+              containerPort: 8080
