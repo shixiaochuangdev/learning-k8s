@@ -1,0 +1,16 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pi            # job名
+  namespace: pod-controller
+spec:
+  template:
+    metadata:
+      name: pi        # pod名
+    spec:
+      containers:
+        - name: pi       # 容器名
+          image: shixiaochuangk8s/perl:5.43.4    # 此镜像有800多M,可提前导入到所有节点,也可能指定导入到某一节点然后指定调度到此节点
+          imagePullPolicy: IfNotPresent
+          command: [ "perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)" ]
+      restartPolicy: Never   # 执行完后不再重启

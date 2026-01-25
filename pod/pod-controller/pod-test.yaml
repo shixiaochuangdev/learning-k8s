@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test
+  namespace: pod-controller
+spec:
+  restartPolicy: Never
+  containers:
+    - name: test
+      image: shixiaochuangk8s/busybox:1.28.3
+      command: [ "/bin/sh" ]
+      stdin: true
+      tty: true

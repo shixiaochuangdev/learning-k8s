@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pc-deployment-recreate
+  namespace: pod-controller
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx-recreate
+  strategy: # 策略
+    type: Recreate # 重建更新
+  template:
+    metadata:
+      labels:
+        app: nginx-recreate
+    spec:
+      containers:
+        - name: nginx
+          image: shixiaochuangk8s/nginx:1.17.1

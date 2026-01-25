@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: pc-replicaset
+  namespace: pod-controller
+spec:
+  replicas: 3 # 期望的 Pod 副本数量，默认值为1
+  selector: # Label Selector，必须匹配 Pod 模板中的标签
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: shixiaochuangk8s/nginx:1.17.1
