@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-ifnotpresent
+  namespace: pod-ns
+spec:
+  containers:
+    - name: nginx
+      image: shixiaochuangk8s/nginx:1.15-alpine
+      imagePullPolicy: IfNotPresent  # 本地有则用本地，无则拉取

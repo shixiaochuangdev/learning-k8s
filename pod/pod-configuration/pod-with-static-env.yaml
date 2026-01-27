@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: env-demo-pod
+  namespace: pod-ns
+spec:
+  containers:
+    - name: app
+      image: shixiaochuangk8s/busybox:1.30
+      command: [ "sh", "-c", "echo \"DB_HOST=$DB_HOST, LOG_LEVEL=$LOG_LEVEL\" && sleep 3600" ]
+      env:
+        - name: DB_HOST
+          value: "mysql.prod.svc.cluster.local"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: APP_VERSION
+          value: "v1.2.0"

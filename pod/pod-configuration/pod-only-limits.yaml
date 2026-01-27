@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-only-limits
+  namespace: pod-ns
+spec:
+  containers:
+    - name: redis
+      image: shixiaochuangk8s/redis:6.2
+      resources:
+        limits:
+          memory: "256Mi"
+          cpu: "1"
+        # 注意：此时 requests 会被自动设为 memory=256Mi, cpu=1

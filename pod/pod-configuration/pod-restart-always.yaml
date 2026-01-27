@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: restart-always-pod
+  namespace: pod-ns
+spec:
+  restartPolicy: Always  # 可省略，因为是默认值
+  containers:
+    - name: busybox
+      image: shixiaochuangk8s/busybox:1.28.3
+      command: [ "sh", "-c", "echo 'Running...'; sleep 10; exit 1" ]  # 故意退出码=1

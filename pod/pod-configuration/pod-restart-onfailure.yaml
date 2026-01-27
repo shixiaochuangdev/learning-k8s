@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: restart-onfailure-pod
+  namespace: pod-ns
+spec:
+  restartPolicy: OnFailure
+  containers:
+    - name: busybox
+      image: shixiaochuangk8s/busybox:1.30
+      command: [ "sh", "-c", "echo 'Task started'; sleep 5; exit 0" ]

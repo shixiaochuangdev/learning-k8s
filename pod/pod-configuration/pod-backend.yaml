@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: api-server-pod
+  namespace: pod-ns
+  labels:
+    app: api
+    tier: backend
+    env: production
+    version: v2
+spec:
+  containers:
+    - name: httpd
+      image: shixiaochuangk8s/httpd:2.4

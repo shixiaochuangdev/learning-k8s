@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-deploy
+  namespace: pod-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:
+        app: demo
+    spec:
+      restartPolicy: Never  # ← 这个设置会被 Deployment 忽略！
+      containers:
+        - name: nginx
+          image: shixiaochuangk8s/nginx:1.17.1
+          command: [ "sh", "-c", "echo 'Start'; sleep 10; exit 1" ]

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: resource-demo-pod
+  namespace: pod-ns
+spec:
+  containers:
+    - name: app-container
+      image: shixiaochuangk8s/nginx:1.17.3
+      resources:
+        requests:
+          memory: "64Mi"   # 容器启动至少需要 64 MiB 内存
+          cpu: "100m"      # 100m = 0.1 个 CPU 核心
+        limits:
+          memory: "128Mi"  # 最多允许使用 128 MiB 内存
+          cpu: "500m"      # 最多允许使用 0.5 个 CPU 核心

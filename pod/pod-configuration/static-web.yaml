@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: static-web
+  namespace: pod-ns
+  labels:
+    app: static
+spec:
+  containers:
+    - name: web
+      image: shixiaochuangk8s/nginx:1.17.2
+      ports:
+        - name: web
+          containerPort: 80

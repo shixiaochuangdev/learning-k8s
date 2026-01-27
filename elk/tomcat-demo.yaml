@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tomcat-demo
+  namespace: elk-ns
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      project: www
+      app: tomcat-demo
+  template:
+    metadata:
+      labels:
+        project: www
+        app: tomcat-demo
+    spec:
+      containers:
+        # ================= Tomcat 容器 =================
+        - name: tomcat
+          image: shixiaochuangk8s/tomcat:9.0.48
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: web
+              protocol: TCP
+
+          resources:
+            requests:
+              cpu: "500m"
+              memory: 1Gi
+            limits:
+              cpu: "1"
+              memory: 2Gi
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          volumeMounts:
+            # Tomcat 日志目录（与 Filebeat 共享）
+            - name: tomcat-logs
+              mountPath: /usr/local/tomcat/logs
+
+            # 只覆盖 ROOT/index.html
+            - name: tomcat-default-index
+              mountPath: /usr/local/tomcat/webapps/ROOT/index.html
+              subPath: index.html
+              readOnly: true
+
+        # ================= Filebeat Sidecar =================
+        - name: filebeat
+          image: shixiaochuangk8s/elastic-filebeat:7.17.28
+          imagePullPolicy: IfNotPresent
+          args:
+            - "-c"
+            - "/etc/filebeat.yml"
+            - "-e"
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+            limits:
+              memory: 500Mi
+
+          securityContext:
+            runAsUser: 0
+
+          volumeMounts:
+            # Filebeat 配置
+            - name: filebeat-config
+              mountPath: /etc/filebeat.yml
+              subPath: filebeat.yml
+              readOnly: true
+
+            # 读取 Tomcat 日志
+            - name: tomcat-logs
+              mountPath: /usr/local/tomcat/logs
+              readOnly: true
+
+      volumes:
+        # Tomcat 写日志，Filebeat 读日志
+        - name: tomcat-logs
+          emptyDir: { }
+
+        # 默认首页 ConfigMap
+        - name: tomcat-default-index
+          configMap:
+            name: tomcat-default-index
+
+        # Filebeat 配置 ConfigMap
+        - name: filebeat-config
+          configMap:
+            name: filebeat-config

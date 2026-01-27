@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: debug-pod
+  namespace: pod-ns
+spec:
+  containers:
+    - name: main-app
+      image: shixiaochuangk8s/nginx:1.15-alpine
+    - name: sidecar
+      image: shixiaochuangk8s/stress:1.0.4
+      command: [ "sh", "-c", "while true; do echo 'Sidecar running...'; sleep 30; done" ]

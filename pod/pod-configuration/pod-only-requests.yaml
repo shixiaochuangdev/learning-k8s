@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-only-requests
+  namespace: pod-ns
+spec:
+  containers:
+    - name: busybox
+      image: shixiaochuangk8s/busybox:1.30
+      command: [ "sh", "-c", "echo Hello && sleep 3600" ]
+      resources:
+        requests:
+          memory: "32Mi"
+          cpu: "50m"
+        # 未设置 limits → 容器可使用节点剩余的所有资源（不推荐生产环境）

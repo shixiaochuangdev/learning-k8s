@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k8s-logs-filebeat-config
+  namespace: elk-ns
+data:
+  # 定义 filebeat.yml 配置文件内容
+  filebeat.yml: |
+    # 定义日志输入源（inputs）
+    filebeat.inputs:
+      # 使用 log 类型输入，用于读取普通日志文件
+      - type: log
+        # 指定要采集的日志文件路径（Kubernetes 标准日志路径）
+        # /var/log/pods/<namespace>_<pod-name>_<uid>/<container>/0.log
+        # 使用通配符匹配所有 Pod 和容器的日志文件
+        paths:
+          - /var/log/pods/*/*/*.log
+
+        # 添加自定义字段，便于后续在 Logstash 或 Kibana 中过滤
+        fields:
+          # 标识日志来源为 Kubernetes
+          app: k8s
+          # 标识日志类型为 Pod 日志（非事件、审计等）
+          log_type: pod_logs
+
+        # 将自定义字段（如 app、log_type）提升到根层级（而不是嵌套在 fields 下）
+        # 这样在 Logstash 中可以直接使用 [app] 而不是 [fields][app]
+        fields_under_root: true
+
+        # 可选：排除某些命名空间的日志（例如 kube-system）
+        # exclude_files: ['.*kube-system_.*']
+
+    # 禁用索引生命周期管理（ILM），因为我们通过 Logstash 控制索引
+    setup.ilm.enabled: false
+
+    # 禁用自动创建 Elasticsearch 索引模板
+    # 因为日志通过 Logstash 写入 ES，模板应由 Logstash 或手动管理
+    setup.template.enabled: false
+
+    # 配置输出目标为 Logstash
+    output.logstash:
+      # Logstash Beats 输入插件的地址（IP + 端口）
+      # 必须确保该地址在集群内可访问，且 Logstash 正在监听 5044 端口
+      hosts: ['192.168.200.215:5044']

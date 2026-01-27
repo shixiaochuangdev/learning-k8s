@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-always
+  namespace: pod-ns
+spec:
+  containers:
+    - name: nginx
+      image: nginx:latest
+      imagePullPolicy: Always  # 显式指定，每次启动都从仓库拉取

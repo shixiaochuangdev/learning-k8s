@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: guaranteed-pod-1
+  namespace: pod-ns
+spec:
+  containers:
+    - name: foo
+      image: shixiaochuangk8s/nginx:1.14-alpine
+      resources:
+        limits:
+          cpu: "10m"
+          memory: "64Mi"
+    - name: bar
+      image: shixiaochuangk8s/busybox:1.30
+      command: [ "sh", "-c", "echo 'Bar running...'; sleep 3600" ]
+      resources:
+        limits:
+          cpu: "100m"
+          memory: "128Mi"

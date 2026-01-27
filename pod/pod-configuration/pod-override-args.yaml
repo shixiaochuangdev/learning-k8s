@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: override-args
+  namespace: pod-ns
+spec:
+  containers:
+  - name: c1
+    image: shixiaochuangk8s/demo-entrypoint:v1.1
+    args: ["AAA", "BBB"]

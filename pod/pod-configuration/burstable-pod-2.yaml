@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: burstable-pod-2
+  namespace: pod-ns
+spec:
+  containers:
+    - name: foo
+      image: shixiaochuangk8s/nginx:1.18
+      resources:
+        limits:
+          memory: "128Mi"   # 只设了 memory limits
+        # CPU 未设置 → requests.cpu = 0, limits.cpu = node capacity
+    - name: bar
+      image: shixiaochuangk8s/busybox:1.28.3
+      command: [ "sh", "-c", "echo 'Bar running...'; sleep 3600" ]
+      resources:
+        limits:
+          cpu: "100m"       # 只设了 CPU limits
+        # memory 未设置 → requests.memory = 0, limits.memory = node capacity

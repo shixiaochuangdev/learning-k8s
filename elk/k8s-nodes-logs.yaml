@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: k8s-nodes-logs
+  namespace: elk-ns
+spec:
+  selector:
+    matchLabels:
+      project: k8s
+      app: filebeat
+  template:
+    metadata:
+      labels:
+        project: k8s
+        app: filebeat
+    spec:
+      containers:
+        - name: filebeat
+          image: shixiaochuangk8s/elastic-filebeat:7.17.28
+          args:
+            - "-c"
+            - "/etc/filebeat.yml"
+            - "-e"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+            limits:
+              cpu: 500m
+              memory: 500Mi
+          securityContext:
+            runAsUser: 0  # 必须以 root 运行才能读取 /var/log/pods
+          volumeMounts:
+            # 挂载 Filebeat 配置文件
+            - name: filebeat-config
+              mountPath: /etc/filebeat.yml
+              subPath: filebeat.yml
+              readOnly: true
+
+            # 挂载 Kubernetes Pod 日志目录（关键！）
+            - name: varlogpods
+              mountPath: /var/log/pods
+              readOnly: true
+
+            # 挂载 kubelet 目录（用于 Kubernetes 元数据匹配）
+            - name: varlibkubelet
+              mountPath: /var/lib/kubelet
+              readOnly: true
+
+          # 如果使用 containerd，可能还需要挂载 containerd 日志（通常 /var/log/pods 已足够）
+          # - name: containerd-logs
+          #   mountPath: /var/log/containers
+          #   readOnly: true
+
+      # 定义卷
+      volumes:
+        # Filebeat 配置来自 ConfigMap
+        - name: filebeat-config
+          configMap:
+            name: k8s-logs-filebeat-config
+
+        # 挂载主机的 /var/log/pods 目录（Pod 日志所在位置）
+        - name: varlogpods
+          hostPath:
+            path: /var/log/pods
+
+        # 挂载主机的 /var/lib/kubelet（用于解析 Pod 元数据）
+        - name: varlibkubelet
+          hostPath:
+            path: /var/lib/kubelet
+
+      # 可选：如果你的系统使用 /var/log/containers（软链接目录），也可挂载
+      # - name: containerd-logs
+      #   hostPath:
+      #     path: /var/log/containers
+
+      # 推荐：设置 tolerations 以允许调度到 master 节点（如果需要采集 master 日志）
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+          operator: Exists
+        - key: node-role.kubernetes.io/control-plane
+          effect: NoSchedule
+          operator: Exists
+
+      # 确保只在 Linux 节点运行
+      nodeSelector:
+        kubernetes.io/os: linux

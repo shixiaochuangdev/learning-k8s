@@ -1,0 +1,17 @@
+# pod-multi-ports.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-with-metrics
+  namespace: pod-ns
+spec:
+  containers:
+    - name: web-app
+      image: shixiaochuangk8s/nginx:1.17.3
+      ports:
+        - containerPort: 80
+          name: http               # 命名端口（推荐！便于 Service 引用）
+          protocol: TCP
+        - containerPort: 8080
+          name: metrics            # 暴露 Prometheus 指标
+          protocol: TCP

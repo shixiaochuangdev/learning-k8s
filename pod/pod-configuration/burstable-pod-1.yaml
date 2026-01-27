@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: burstable-pod-1
+  namespace: pod-ns
+spec:
+  containers:
+    - name: foo
+      image: shixiaochuangk8s/nginx:1.17.3
+      resources:
+        requests:
+          cpu: "10m"
+          memory: "64Mi"
+        limits:
+          cpu: "10m"
+          memory: "64Mi"   # requests == limits（Guaranteed 风格）
+    - name: bar
+      image: shixiaochuangk8s/busybox:1.30
+      command: [ "sh", "-c", "echo 'Bar running...'; sleep 3600" ]
+      # 完全没有 resources 字段 → BestEffort

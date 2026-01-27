@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: network-share-demo
+  namespace: pod-ns
+spec:
+  containers:
+    - name: web-server
+      image: shixiaochuangk8s/nginx:1.15-alpine
+      ports:
+        - containerPort: 80
+      # Nginx 默认监听 80 端口，我们稍后通过 localhost:80 访问
+
+    - name: curl-client
+      image: shixiaochuangk8s/curlimages-curl:8.18.0
+      command: [ "/bin/sh", "-c" ]
+      args:
+        - |
+          while true; do
+            echo "[$(date)] Trying to access web server via localhost...";
+            curl -s --max-time 3 http://localhost/;
+            sleep 5;
+          done

@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filebeat-config
+  namespace: elk-ns
+
+data:
+  filebeat.yml: |-
+    filebeat.inputs:
+      - type: log
+        paths:
+          - /usr/local/tomcat/logs/catalina.*
+        fields:
+          app: www
+          type: tomcat-catalina
+        fields_under_root: true
+        multiline:
+          pattern: '^\['
+          negate: true
+          match: after
+          timeout: 5s
+
+    # 因为使用 Logstash，关闭 ILM 和模板自动设置
+    setup.ilm.enabled: false
+    setup.template.enabled: false  # 明确禁用，避免误解
+
+    output.logstash:
+      hosts: [ "192.168.200.215:5044" ]
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tomcat-default-index
+  namespace: elk-ns
+
+data:
+  index.html: |
+    tomcat running
