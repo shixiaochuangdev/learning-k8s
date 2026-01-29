@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: security-context-pod-demo
+  namespace: sc-ns
+spec:
+  volumes:
+    - name: sec-ctx-vol
+      emptyDir: { }
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 3000
+    fsGroup: 2000
+  containers:
+    - name: sec-ctx-demo
+      image: shixiaochuangk8s/busybox:1.30
+      command: [ 'sh', '-c', 'sleep 60m' ]
+      volumeMounts:
+        - name: sec-ctx-vol
+          mountPath: /pod/demo
+      securityContext:
+        allowPrivilegeEscalation: false

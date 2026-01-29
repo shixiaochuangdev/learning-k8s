@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo-pod
+  namespace: sa-ns
+spec:
+  containers:
+    - name: demo-container
+      image: shixiaochuangk8s/curlimages-curl:8.18.0
+      command: [ "sleep", "3600" ] # 让容器保持运行状态

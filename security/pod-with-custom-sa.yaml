@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo-pod-custom-sa
+  namespace: sa-ns
+spec:
+  serviceAccountName: my-custom-sa # 关键点：在这里指定
+  containers:
+    - name: demo-container
+      image: shixiaochuangk8s/curlimages-curl:8.18.0
+      command: [ "sleep", "3600" ]

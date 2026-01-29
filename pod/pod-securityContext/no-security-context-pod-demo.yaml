@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: no-security-context-pod-demo
+  namespace: sc-ns
+spec:
+  volumes:
+    - name: sec-ctx-vol
+      emptyDir: { }
+  containers:
+    - name: no-sec-ctx-demo
+      image: shixiaochuangk8s/busybox:1.30
+      command: [ 'sh', '-c', 'sleep 60m' ]
+      volumeMounts:
+        - name: sec-ctx-vol
+          mountPath: /pod/demo
