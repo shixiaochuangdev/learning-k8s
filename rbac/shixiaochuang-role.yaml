@@ -1,0 +1,32 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  # Role 的名称，必须在命名空间内唯一
+  name: shixiaochuang-role
+  # 指定该 Role 所属的命名空间（Role 只能作用于单个命名空间）
+  namespace: rbac-ns
+
+# 定义具体的权限规则列表
+rules:
+  # 第一条规则（可包含多个 apiGroups、resources、verbs）
+  -
+    # 指定 API 组：
+    #   '' 表示核心 API 组（如 pods）
+    #   'apps' 表示 apps API 组（如 deployments, replicasets）
+    apiGroups: [ '', 'apps' ]
+
+    # 指定该规则适用的资源类型
+    #   'deployments' 和 'replicasets' 属于 apps 组
+    #   'pods' 属于核心组（''）
+    resources: [ 'deployments', 'replicasets', 'pods' ]
+
+    # 指定允许的操作（动词）：
+    #   get: 获取单个资源
+    #   list: 列出资源集合
+    #   watch: 监听资源变化
+    #   create: 创建资源
+    #   update: 更新整个资源对象
+    #   patch: 部分更新资源
+    #   delete: 删除资源
+    # 注：使用 ['*'] 可表示所有操作，但明确列出更安全、清晰
+    verbs: [ 'get', 'list', 'watch', 'create', 'update', 'patch', 'delete' ]

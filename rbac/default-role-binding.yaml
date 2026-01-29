@@ -1,0 +1,13 @@
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: default-rolebinding
+  namespace: team-b
+subjects:
+- kind: ServiceAccount
+  name: sa-team-b
+  namespace: team-b
+roleRef:
+  kind: ClusterRole
+  name: view
+  apiGroup: rbac.authorization.k8s.io

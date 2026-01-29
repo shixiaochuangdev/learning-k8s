@@ -1,0 +1,12 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: demo-global-reader-binding  # 绑定名称（集群唯一）
+subjects:
+  - kind: ServiceAccount
+    name: demo-global-reader-sa      # 要绑定的 SA 名称
+    namespace: rbac-ns      # SA 所在的命名空间
+roleRef:
+  kind: ClusterRole
+  name: global-pod-node-reader       # 引用前面创建的 ClusterRole
+  apiGroup: rbac.authorization.k8s.io

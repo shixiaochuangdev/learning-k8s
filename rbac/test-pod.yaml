@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-global-rbac-pod
+  namespace: rbac-ns
+spec:
+  serviceAccountName: demo-global-reader-sa  # 关键：使用我们创建的 SA
+  containers:
+    - name: curl-container
+      image: shixiaochuangk8s/curlimages-curl:8.18.0
+      command: [ "sleep", "3600" ]

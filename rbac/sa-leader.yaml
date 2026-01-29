@@ -1,0 +1,33 @@
+# sa-leader.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sa-leader
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: department-leader-team-a
+  namespace: team-b
+subjects:
+- kind: ServiceAccount
+  name: sa-leader
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: admin
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: department-leader-team-b
+  namespace: team-a
+subjects:
+- kind: ServiceAccount
+  name: sa-leader
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: admin
+  apiGroup: rbac.authorization.k8s.io

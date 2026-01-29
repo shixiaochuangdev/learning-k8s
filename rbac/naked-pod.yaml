@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: naked-pod
+  namespace: rbac-ns
+spec:
+  containers:
+    - name: curl-container
+      image: shixiaochuangk8s/curlimages-curl:8.18.0
+      command: [ "sleep", "3600" ]

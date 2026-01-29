@@ -1,0 +1,12 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: shixiaochuang-sa-role
+  namespace: rbac-ns
+rules:
+  - apiGroups: [ '' ]
+    resources: [ 'pods' ]
+    verbs: [ 'get', 'watch', 'list' ]
+  - apiGroups: [ 'apps' ]
+    resources: [ 'deployments' ]
+    verbs: [ 'get', 'list', 'watch', 'create', 'update', 'patch', 'delete' ]

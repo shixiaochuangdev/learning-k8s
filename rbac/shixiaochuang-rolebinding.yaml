@@ -1,0 +1,37 @@
+apiVersion: rbac.authorization.k8s.io/v1
+# 资源类型为 RoleBinding，用于将角色（Role）绑定到用户、组或 ServiceAccount
+kind: RoleBinding
+
+metadata:
+  # RoleBinding 的名称，在命名空间内必须唯一
+  name: shixiaochuang-rolebinding
+
+  # 指定该 RoleBinding 所在的命名空间（必须与关联的 Role 在同一命名空间）
+  namespace: rbac-ns
+
+# 定义“谁”（主体）将获得权限，可以是一个或多个用户、组或 ServiceAccount
+subjects:
+  # 第一个主体（可以有多个）
+  - # 主体的类型，这里指定为 "User"（代表外部用户，如通过证书或 OIDC 认证的用户）
+    kind: User
+
+    # 主体的名称，这里是用户名 "shixiaochuang"
+    name: shixiaochuang
+
+    # 主体所属的 API 组：
+    #   对于 User 和 Group，通常使用 rbac.authorization.k8s.io
+    #   注意：ServiceAccount 的 apiGroup 应留空（即 ""）
+    apiGroup: rbac.authorization.k8s.io
+
+# 引用要绑定的角色（Role 或 ClusterRole）
+roleRef:
+  # 被引用角色的类型，此处为 "Role"（表示命名空间级别的角色）
+  kind: Role
+
+  # 被引用角色的名称，必须与已存在的 Role 名称一致
+  name: shixiaochuang-role
+
+  # 角色所属的 API 组：
+  #   Role 和 ClusterRole 都属于 rbac.authorization.k8s.io
+  #   注：虽然某些旧文档说可留空，但官方推荐显式写出，避免歧义
+  apiGroup: rbac.authorization.k8s.io
