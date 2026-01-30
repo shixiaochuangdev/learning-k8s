@@ -1,0 +1,51 @@
+expose:
+  type: ingress
+  tls:
+    enabled: false
+  ingress:
+    hosts:
+      core: registry.shixiaochuang.org
+    className: "nginx"
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/proxy-body-size: "0"
+
+ipFamily:
+  ipv4:
+    enabled: true
+  ipv6:
+    enabled: false
+
+externalURL: http://registry.shixiaochuang.org
+
+persistence:
+  enabled: true
+  resourcePolicy: "keep"
+  persistentVolumeClaim:
+    registry:
+      storageClass: "nfs-csi"
+      accessMode: ReadWriteMany
+      size: 5Gi
+    chartmuseum:
+      storageClass: "nfs-csi"
+      accessMode: ReadWriteMany
+      size: 5Gi
+    jobservice:
+      jobLog:
+        storageClass: "nfs-csi"
+        accessMode: ReadWriteOnce
+        size: 1Gi
+    database:
+      storageClass: "nfs-csi"
+      accessMode: ReadWriteMany
+      size: 2Gi
+    redis:
+      storageClass: "nfs-csi"
+      accessMode: ReadWriteMany
+      size: 2Gi
+    trivy:
+      storageClass: "nfs-csi"
+      accessMode: ReadWriteMany
+      size: 5Gi
+
+harborAdminPassword: "shixiaochuang.org"
