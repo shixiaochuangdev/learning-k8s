@@ -1,0 +1,124 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: node-ns
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-exporter
+  namespace: node-ns
+  labels:
+    app: node-exporter
+spec:
+  selector:
+    matchLabels:
+      app: node-exporter
+  template:
+    metadata:
+      labels:
+        app: node-exporter
+    spec:
+      hostPID: true            # 允许 Pod 访问宿主机的 PID 命名空间（查看宿主进程）
+      hostIPC: true            # 允许 Pod 访问宿主机的 IPC 命名空间
+      hostNetwork: true        # 使用宿主机网络（Pod 直接使用 Node IP）
+      nodeSelector:            # 节点选择器
+        kubernetes.io/os: linux # 只在 Linux 节点上运行
+      containers:
+        - name: node-exporter
+          image: shixiaochuangk8s/node-exporter:v1.10.1
+          imagePullPolicy: IfNotPresent
+          args:
+            - --web.listen-address=$(HOSTIP):9100
+              # 监听宿主机 IP 的 9100 端口，便于 Prometheus 直接抓取
+            - --path.procfs=/host/proc
+              # 指定 proc 文件系统路径（挂载宿主机的 /proc）
+            - --path.sysfs=/host/sys
+              # 指定 sys 文件系统路径（挂载宿主机的 /sys）
+            - --path.rootfs=/host/root
+              # 指定宿主机根目录路径
+            - --no-collector.hwmon
+              # 禁用硬件监控采集器（减少无用指标）
+            - --no-collector.nfs
+              # 禁用 NFS 相关采集器
+            - --no-collector.nfsd
+              # 禁用 NFS Daemon 采集器
+            - --no-collector.nvme
+              # 禁用 NVMe 设备采集器
+            - --no-collector.dmi
+              # 禁用 DMI（硬件信息）采集器
+            - --no-collector.arp
+              # 禁用 ARP 表采集器
+            - --collector.filesystem.ignored-mount-points=^/(dev|proc|sys|var/lib/containerd/.+|/var/lib/docker/.+|var/lib/kubelet/pods/.+)($|/)
+              # 忽略不需要的挂载点，避免采集容器/系统伪文件系统
+            - --collector.filesystem.ignored-fs-types=^(autofs|binfmt_misc|cgroup|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|mqueue|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|sysfs|tracefs)$
+              # 忽略不需要的文件系统类型，减少噪声指标
+          ports:
+            - containerPort: 9100
+              # Node Exporter 默认暴露的指标端口
+          env:
+            - name: HOSTIP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+              # 从 Pod 所在 Node 获取宿主机 IP
+          resources:
+            requests:
+              cpu: 150m         # 请求 CPU 资源 150 毫核
+              memory: 180Mi     # 请求内存 180Mi
+            limits:
+              cpu: 150m         # 限制 CPU 使用上限
+              memory: 180Mi     # 限制内存使用上限
+          securityContext:
+            runAsNonRoot: true  # 强制以非 root 用户运行
+            runAsUser: 65534    # 使用 nobody 用户（安全加固）
+          volumeMounts:
+            - name: proc
+              mountPath: /host/proc
+              # 挂载宿主机 /proc
+            - name: sys
+              mountPath: /host/sys
+              # 挂载宿主机 /sys
+            - name: root
+              mountPath: /host/root
+              mountPropagation: HostToContainer
+              # 允许宿主机挂载信息传递到容器
+              readOnly: true
+              # 只读挂载，防止误操作宿主机
+      tolerations:              # 容忍污点
+        - operator: "Exists"
+          # 允许在所有节点运行（包括 Master / 有污点节点）
+      volumes:
+        - name: proc
+          hostPath:
+            path: /proc
+            # 宿主机的 /proc 目录
+        - name: dev
+          hostPath:
+            path: /dev
+            # 宿主机的 /dev 目录（当前未使用，可删除）
+        - name: sys
+          hostPath:
+            path: /sys
+            # 宿主机的 /sys 目录
+        - name: root
+          hostPath:
+            path: /
+            # 宿主机根目录
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: node-exporter
+  namespace: node-ns
+  labels:
+    app: node-exporter
+spec:
+  selector:
+    app: node-exporter
+  ports:
+    - name: metrics                # 端口名称（Prometheus 友好）
+      port: 9100                   # Service 端口
+      targetPort: 9100             # 转发到 Pod 的 9100 端口
+      protocol: TCP                # 使用 TCP 协议

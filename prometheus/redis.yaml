@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: redis-ns
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: redis-ns
+spec:
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: shixiaochuangk8s/redis:7.4.2
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          ports:
+            - containerPort: 6379
+          command: ["redis-server"]
+          args:
+            - "--requirepass"
+            - "123321"          # 设置访问密码
+        - name: redis-exporter
+          image: shixiaochuangk8s/redis_exporter:v1.80.1
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          ports:
+            - containerPort: 9121
+          env:
+            - name: REDIS_PASSWORD  # 使用 REDIS_PASSWORD 环境变量传递密码
+              value: "123321"        # 设置与 Redis 相同的密码
+          args:
+      # 默认连接到 Redis 实例,其中 localhost 是 Redis 容器的名称（在同一个 Pod 内）。
+            - "--redis.addr=redis://localhost:6379"
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: redis
+  namespace: redis-ns
+spec:
+  selector:
+    app: redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: 6379
+    - name: prom
+      port: 9121
+      targetPort: 9121

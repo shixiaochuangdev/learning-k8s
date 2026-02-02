@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mongodb-ns
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb
+  namespace: mongodb-ns
+spec:
+  serviceName: mongodb
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9216"
+        prometheus.io/path: "/metrics"
+    spec:
+      # 注意：官方 mongo 镜像以 UID 999 运行（非 root）
+      securityContext:
+        fsGroup: 999
+      containers:
+        - name: mongodb
+          image: mongo:5.0.24
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 27017
+          securityContext:
+            runAsUser: 999
+          volumeMounts:
+            - name: data
+              mountPath: /data/db
+
+        - name: mongodb-exporter
+          image: percona/mongodb_exporter:0.47.2
+          args:
+            - "--collect-all"
+          env:
+            - name: MONGODB_URI
+              value: "mongodb://127.0.0.1:27017/admin"
+          ports:
+            - containerPort: 9216
+
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        storageClassName: nfs-csi
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 10Gi
