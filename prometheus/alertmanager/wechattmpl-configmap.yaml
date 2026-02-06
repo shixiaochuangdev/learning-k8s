@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wechat-tmpl
+  namespace: alertmanager-ns
+data:
+  wechat.tmpl: |
+    {{ define "wechat.default.message" }}
+
+    {{/* ---------- 🚨 告警触发 ---------- */}}
+    {{- if gt (len .Alerts.Firing) 0 -}}
+
+    🚨【Prometheus 告警通知】🚨
+    共有 {{ len .Alerts.Firing }} 条告警正在触发！
+
+    {{- range $alert := .Alerts.Firing }}
+    ------------------------------
+    🔥 告警：
+    告警名称：{{ $alert.Labels.alertname }}
+    告警级别：{{ $alert.Labels.severity }}
+    实例信息：{{ $alert.Labels.instance }}
+    主题信息：{{ $alert.Annotations.summary }}
+    告警详情：{{ $alert.Annotations.message }}{{ $alert.Annotations.description }}
+    触发时间：{{ ($alert.StartsAt.Add 28800e9).Format "2006-01-02 15:04:05" }}
+    ------------------------------
+    {{- end }}
+
+    📅 当前状态：FIRING
+
+    {{- end }}
+
+    {{/* ---------- ✅ 告警恢复 ---------- */}}
+    {{- if gt (len .Alerts.Resolved) 0 -}}
+
+    ✅【Prometheus 告警恢复】✅
+    共有 {{ len .Alerts.Resolved }} 条告警已恢复。
+
+    {{- range $alert := .Alerts.Resolved }}
+    ------------------------------
+    💚 恢复告警：
+    告警名称：{{ $alert.Labels.alertname }}
+    实例信息：{{ $alert.Labels.instance }}
+    主题信息：{{ $alert.Annotations.summary }}
+    故障时间：{{ ($alert.StartsAt.Add 28800e9).Format "2006-01-02 15:04:05" }}
+    恢复时间：{{ ($alert.EndsAt.Add 28800e9).Format "2006-01-02 15:04:05" }}
+    ------------------------------
+    {{- end }}
+
+    {{- end }}
+
+    {{- end }}

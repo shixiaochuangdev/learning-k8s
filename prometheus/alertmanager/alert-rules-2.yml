@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+  namespace: prometheus-ns
+data:
+  k8s-deployment-rules.yml: |
+    groups:
+      - name: kubernetes-deployment-alerts
+        rules:
+          - alert: DeploymentReplicasMismatch
+            expr: kube_deployment_spec_replicas != kube_deployment_status_replicas_available
+            for: 30s
+            labels:
+              severity: critical
+            annotations:
+              summary: "Deployment {{ $labels.namespace }}/{{ $labels.deployment }} 副本不匹配"
+              description: >
+                Deployment {{ $labels.namespace }}/{{ $labels.deployment }} 的期望副本数与实际可用副本数不一致。
+                请检查 Pod 是否处于 Pending/Failed 状态，或是否存在资源不足、镜像拉取失败等问题。
+
+  k8s-storage-rules.yml: |
+    groups:
+      - name: kubernetes-storage-alerts
+        rules:
+          - alert: PersistentVolumeClaimNotBound
+            expr: kube_persistentvolumeclaim_status_phase{phase!="Bound"} == 1
+            for: 30s
+            labels:
+              severity: warning
+            annotations:
+              summary: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} 未绑定"
+              description: >
+                该 PVC 已处于非 Bound 状态超过 30秒。

@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules-restarts
+  namespace: prometheus-ns
+data:
+  k8s-restarts-rules.yml: |
+    groups:
+      - name: kubernetes-pods
+        rules:
+          - alert: PodContainerFrequentRestarts
+            expr: |
+              kube_pod_container_status_restarts_total{pod="restart-always-pod"} >= 3
+            for: 30s
+            labels:
+              severity: warning
+            annotations:
+              summary: "容器 {{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }}) 已重启 {{ $value }} 次"
+              description: "该容器可能因崩溃、健康检查失败或资源不足而反复重启，请检查日志和资源配置。"

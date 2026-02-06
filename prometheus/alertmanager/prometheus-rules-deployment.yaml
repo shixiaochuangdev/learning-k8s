@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules-deployment
+  namespace: prometheus-ns
+data:
+  k8s-deployment-rules.yml: |
+    groups:
+    - name: kubernetes-deployment-alerts
+      rules:
+      - alert: DeploymentReplicasMismatch
+        expr: kube_deployment_spec_replicas != kube_deployment_status_replicas_available
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Deployment {{ $labels.namespace }}/{{ $labels.deployment }} 副本不匹配"
+          description: >
+            Deployment 期望副本数与实际可用副本数不一致

@@ -1,0 +1,118 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alert-template
+  namespace: alertmanager-ns
+data:
+  email.tmpl: |-
+    {{ define "email.default.html" }}
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        body {
+          font-family: "Microsoft YaHei", Arial, sans-serif;
+          background-color: #f6f8fa;
+          padding: 20px;
+          color: #333;
+        }
+
+        h2 {
+          text-align: center;
+          color: #333;
+          margin-bottom: 20px;
+        }
+
+        .alert-box {
+          border: 1px solid #ddd;
+          border-left: 6px solid #2196F3;
+          border-radius: 8px;
+          background-color: #fff;
+          padding: 15px 20px;
+          margin-bottom: 15px;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .critical {
+          border-left-color: #d93025;
+          background-color: #fdecea;
+        }
+
+        .warning {
+          border-left-color: #f9a825;
+          background-color: #fff8e1;
+        }
+
+        .resolved {
+          border-left-color: #2e7d32;
+          background-color: #e8f5e9;
+        }
+
+        .label {
+          font-weight: bold;
+          color: #555;
+        }
+
+        .footer {
+          text-align: center;
+          color: #999;
+          margin-top: 20px;
+          font-size: 13px;
+        }
+      </style>
+    </head>
+
+    <body>
+      <h2>🔥 Prometheus 告警通知 🔔</h2>
+
+      <!-- 触发中的告警 -->
+      {{- if gt (len .Alerts.Firing) 0 }}
+        {{- range .Alerts }}
+          <div class="alert-box {{ .Labels.severity }}">
+            <p><span class="label">状态：</span>
+              <b style="color:#d93025;">触发中 (Firing)</b>
+            </p>
+            <p><span class="label">告警程序：</span> prometheus_alert</p>
+            <p><span class="label">告警级别：</span> {{ .Labels.severity }}</p>
+            <p><span class="label">告警类型：</span> {{ .Labels.alertname }}</p>
+            <p><span class="label">告警主机：</span> {{ .Labels.instance }}</p>
+            <p><span class="label">告警主题：</span> {{ .Annotations.summary }}</p>
+            <p><span class="label">告警详情：</span> {{ .Annotations.description }}</p>
+            <p><span class="label">触发时间：</span>
+              {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+            </p>
+          </div>
+        {{- end }}
+      {{- end }}
+
+      <!-- 恢复的告警 -->
+      {{- if gt (len .Alerts.Resolved) 0 }}
+        {{- range .Alerts }}
+          <div class="alert-box resolved">
+            <p><span class="label">状态：</span>
+              <b style="color:#2e7d32;">已恢复 (Resolved)</b>
+            </p>
+            <p><span class="label">告警程序：</span> prometheus_alert</p>
+            <p><span class="label">告警级别：</span> {{ index .Labels "severity" }}</p>
+            <p><span class="label">告警类型：</span> {{ .Labels.alertname }}</p>
+            <p><span class="label">告警主机：</span> {{ .Labels.instance }}</p>
+            <p><span class="label">告警主题：</span> {{ .Annotations.summary }}</p>
+            <p><span class="label">告警详情：</span> {{ .Annotations.description }}</p>
+            <p><span class="label">触发时间：</span>
+              {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+            </p>
+            <p><span class="label">恢复时间：</span>
+              {{ .EndsAt.Format "2006-01-02 15:04:05" }}
+            </p>
+          </div>
+        {{- end }}
+      {{- end }}
+
+      <div class="footer">
+        本邮件由 <b>Alertmanager</b> 自动发送，请勿直接回复。<br>
+        若需取消或修改通知，请联系系统管理员。
+      </div>
+    </body>
+    </html>
+    {{ end }}

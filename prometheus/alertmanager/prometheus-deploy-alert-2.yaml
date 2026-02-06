@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: prometheus-ns
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      serviceAccountName: prometheus
+      securityContext:
+        runAsUser: 65534
+        fsGroup: 65534
+
+      containers:
+        - name: prometheus
+          image: shixiaochuangk8s/prometheus:v3.5.0
+          args:
+            - '--config.file=/etc/prometheus/prometheus.yml'
+            - '--storage.tsdb.path=/prometheus'
+            - '--storage.tsdb.retention.time=24h'
+            - '--web.enable-admin-api'
+            - '--web.enable-lifecycle'
+
+          ports:
+            - containerPort: 9090
+              name: http
+
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/prometheus/prometheus.yml
+              subPath: prometheus.yml
+
+            - name: data
+              mountPath: /prometheus
+
+            - name: rules-volume
+              mountPath: /etc/prometheus/rules
+
+          resources:
+            requests:
+              cpu: 200m
+              memory: 1024Mi
+            limits:
+              cpu: 200m
+              memory: 1024Mi
+
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: 9090
+            initialDelaySeconds: 30
+            periodSeconds: 30
+
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: 9090
+            initialDelaySeconds: 5
+            periodSeconds: 5
+
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: prometheus-pvc
+
+        - name: config-volume
+          configMap:
+            name: prometheus-config
+
+        - name: rules-volume
+          projected:
+            sources:
+              - configMap:
+                  name: prometheus-rules-deployment
+              - configMap:
+                  name: prometheus-rules-storage

@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager
+  namespace: alertmanager-ns
+  labels:
+    app: alertmanager
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alertmanager
+
+  template:
+    metadata:
+      labels:
+        app: alertmanager
+
+    spec:
+      volumes:
+        - name: alertcfg
+          configMap:
+            name: alert-config
+
+        - name: alerttmpl
+          configMap:
+            name: alert-template
+
+      containers:
+        - name: alertmanager
+          image: shixiaochuangk8s/alertmanager:v0.31.0
+          imagePullPolicy: IfNotPresent
+
+          args:
+            - --config.file=/etc/alertmanager/config.yml
+
+          ports:
+            - containerPort: 9093
+              name: http
+
+          volumeMounts:
+            # Alertmanager 主配置
+            - name: alertcfg
+              mountPath: /etc/alertmanager/config.yml
+              subPath: config.yml
+
+            # 邮件模板
+            - name: alerttmpl
+              mountPath: /etc/alertmanager/template
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 100m
+              memory: 256Mi
