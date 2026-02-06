@@ -14,7 +14,7 @@ data:
     alerting:
       alertmanagers:
         - static_configs:
-            - targets: [ 'alertmanager.alertmanager-ns.svc.cluster.local:9093' ]
+            - targets: []
 
     # 告警规则文件
     rule_files:
@@ -25,7 +25,7 @@ data:
       # 1. 监控 Prometheus 自身
       - job_name: "prometheus"
         static_configs:
-          - targets: [ "localhost:9090" ]
+          - targets: ["localhost:9090"]
             labels:
               app: "prometheus"
 
@@ -40,22 +40,22 @@ data:
                 - ksm-ns
         relabel_configs:
           # 仅保留 kube-state-metrics Service
-          - source_labels: [ __meta_kubernetes_service_label_app_kubernetes_io_name ]
+          - source_labels: [__meta_kubernetes_service_label_app_kubernetes_io_name]
             action: keep
             regex: kube-state-metrics
           # 仅保留 http-metrics 端口
-          - source_labels: [ __meta_kubernetes_endpoint_port_name ]
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
             action: keep
             regex: http-metrics
           # 映射 Service Labels
           - action: labelmap
             regex: __meta_kubernetes_service_label_(.+)
           # 命名空间标签
-          - source_labels: [ __meta_kubernetes_namespace ]
+          - source_labels: [__meta_kubernetes_namespace]
             target_label: k8s_namespace
           # Service 名称标签
-          - source_labels: [ __meta_kubernetes_service_name ]
+          - source_labels: [__meta_kubernetes_service_name]
             target_label: k8s_sname
           # Pod 名称作为 instance
-          - source_labels: [ __meta_kubernetes_pod_name ]
+          - source_labels: [__meta_kubernetes_pod_name]
             target_label: instance

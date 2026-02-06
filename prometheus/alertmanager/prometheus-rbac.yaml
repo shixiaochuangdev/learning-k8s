@@ -1,0 +1,53 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus
+rules:
+  # 1. 访问 Node 及其子资源（用于 kubelet 指标）
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - nodes/proxy
+      - nodes/metrics
+      - nodes/stats
+    verbs: ["get", "list", "watch"]
+
+  # 2. 服务发现所需资源
+  - apiGroups: [""]
+    resources:
+      - services
+      - endpoints
+      - pods
+    verbs: ["get", "list", "watch"]
+
+  # 3. Ingress 支持（可选）
+  - apiGroups:
+      - extensions
+      - networking.k8s.io
+    resources:
+      - ingresses
+    verbs: ["get", "list", "watch"]
+
+  # 4.允许访问 API Server 的 /metrics
+  - nonResourceURLs:
+      - "/metrics"
+    verbs: ["get"]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: prometheus-ns
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole # 引用的资源类型为 ClusterRole
+  name: prometheus # 引用的 ClusterRole 名称为 prometheus
+subjects:
+  - kind: ServiceAccount # 绑定的资源类型为 ServiceAccount
+    name: prometheus # 绑定的 ServiceAccount 名称为 prometheus
+    namespace: prometheus-ns
