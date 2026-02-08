@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: grafana-ns
+data:
+  prometheus.yaml: |-
+    {
+      "apiVersion": 1,
+      "datasources": [
+        {
+          "name": "victoria-metrics-cluster",
+          "type": "prometheus",
+          "access": "proxy",
+          "url": "http://vmselect.kube-vm.svc.cluster.local:8481/select/0",
+          "orgId": 1,
+          "editable": true,
+          "version": 1,
+          "isDefault": true
+        }
+      ]
+    }
