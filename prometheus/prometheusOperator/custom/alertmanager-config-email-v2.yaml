@@ -1,0 +1,31 @@
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: email
+  namespace: monitoring
+  labels:
+    alertmanagerConfig: example
+spec:
+  route:
+    receiver: email
+    groupBy: ['alertname','cluster']
+    groupWait: 1m
+    groupInterval: 3m
+    repeatInterval: 10m
+
+    matchers:
+      - name: severity
+        value: critical
+
+  receivers:
+    - name: email
+      emailConfigs:
+        - to: wfufsbsvjfcsd@gmail.com
+          from: shixiaochuangwork@foxmail.com
+          smarthost: smtp.qq.com:587
+          authUsername: shixiaochuangwork@foxmail.com
+          authPassword:
+            name: alertmanager-email-secret
+            key: smtp-password
+          requireTLS: true
+          sendResolved: true

@@ -1,0 +1,83 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: k8s
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/component: prometheus
+    app.kubernetes.io/instance: k8s
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/part-of: kube-prometheus
+    app.kubernetes.io/version: 3.5.0
+
+spec:
+  version: 3.5.0
+  image: quay.io/prometheus/prometheus:v3.5.0
+  replicas: 2
+
+  serviceAccountName: prometheus-k8s
+
+  nodeSelector:
+    kubernetes.io/os: linux
+
+  resources:
+    requests:
+      memory: 400Mi
+
+  securityContext:
+    runAsNonRoot: false
+    runAsUser: 0
+
+  podMetadata:
+    labels:
+      app.kubernetes.io/component: prometheus
+      app.kubernetes.io/instance: k8s
+      app.kubernetes.io/name: prometheus
+      app.kubernetes.io/part-of: kube-prometheus
+      app.kubernetes.io/version: 3.5.0
+
+  alerting:
+    alertmanagers:
+      - apiVersion: v2
+        name: alertmanager-main
+        namespace: monitoring
+        port: web
+
+  enableFeatures: []
+  externalLabels: {}
+
+  serviceMonitorSelector: {}
+  serviceMonitorNamespaceSelector: {}
+
+  podMonitorSelector: {}
+  podMonitorNamespaceSelector: {}
+
+  probeSelector: {}
+  probeNamespaceSelector: {}
+
+  ruleSelector: {}
+  ruleNamespaceSelector: {}
+
+  scrapeConfigSelector: {}
+  scrapeConfigNamespaceSelector: {}
+
+  additionalScrapeConfigs:
+    name: additional-configs
+    key: prometheus-additional.yaml
+
+  storage:
+    volumeClaimTemplate:
+      spec:
+        storageClassName: nfs-csi
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 20Gi
+
+  remoteWrite:
+    - url: http://vminsert.kube-vm.svc.cluster.local:8480/insert/0/prometheus/api/v1/write
+      queueConfig:
+        maxSamplesPerSend: 10000
+        maxShards: 10
+        capacity: 20000
