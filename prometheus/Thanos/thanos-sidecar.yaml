@@ -1,0 +1,164 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: prometheus
+  namespace: kube-mon
+  labels:
+    app: prometheus
+spec:
+  # Headless Service 名称，用于 Pod 网络标识（必须存在且匹配）
+  serviceName: prometheus
+  replicas: 2
+  # 选择器，用于匹配 Pod 的标签（必须与 template.metadata.labels 一致）
+  selector:
+    matchLabels:
+      app: prometheus
+      thanos-store-api: "true"
+  template:
+    metadata:
+      labels:
+        app: prometheus
+        thanos-store-api: "true"
+    spec:
+      serviceAccountName: prometheus
+      securityContext:
+        runAsUser: 65534
+        fsGroup: 65534
+      # Pod 反亲和性配置：尽量避免两个 Prometheus Pod 调度到同一节点
+      affinity:
+        podAntiAffinity:
+          # 调度时优先考虑（非强制），权重为 100
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                # 拓扑域为节点（hostname）
+                topologyKey: kubernetes.io/hostname
+                # 选择具有 app=prometheus 标签的 Pod 进行反亲和
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - prometheus
+      # 定义共享卷（用于 Prometheus 和 Thanos Sidecar 共享配置）
+      volumes:
+        # 卷名：prometheus-config，挂载 ConfigMap 内容
+        - name: prometheus-config
+          configMap:
+            name: prometheus-config
+        # 卷名：prometheus-rules，挂载告警规则 ConfigMap
+        - name: prometheus-rules
+          configMap:
+            name: prometheus-rules-deployment
+        - name: prometheus-config-shared
+          emptyDir: {}
+      containers:
+        - name: prometheus
+          image: shixiaochuangk8s/prometheus:v3.5.0
+          imagePullPolicy: IfNotPresent
+          # 启动参数
+          args:
+            # 主配置文件路径（由 Thanos reloader 生成）
+            - "--config.file=/etc/prometheus-shared/prometheus.yaml"
+            # TSDB 数据存储路径
+            - "--storage.tsdb.path=/prometheus"
+            # 仅保留最近 6 小时的数据（短期保留，长期由 Thanos 存储）
+            - "--storage.tsdb.retention.time=6h"
+            # 不创建锁文件（允许多实例访问？注意：此处通常单实例）
+            - "--storage.tsdb.no-lockfile"
+            # 最小 TSDB 块持续时间设为 2 小时（配合 Thanos 压缩）
+            - "--storage.tsdb.min-block-duration=2h"
+            # 最大 TSDB 块持续时间设为 2 小时（加速上传到对象存储）
+            - "--storage.tsdb.max-block-duration=2h"
+            # 启用 Admin API（谨慎使用）
+            - "--web.enable-admin-api"
+            # 启用生命周期管理（支持 reload）
+            - "--web.enable-lifecycle"
+          # 暴露 HTTP 端口（Prometheus Web UI 和 API）
+          ports:
+            - name: http
+              containerPort: 9090
+          resources:
+            requests:
+              memory: 1Gi
+              cpu: 500m
+            limits:
+              memory: 1Gi
+              cpu: 500m
+          # 挂载卷到容器内路径
+          volumeMounts:
+            # 挂载共享配置目录（由 Thanos reloader 写入最终配置）
+            - name: prometheus-config-shared
+              mountPath: /etc/prometheus-shared/
+            # 挂载告警规则
+            - name: prometheus-rules
+              mountPath: /etc/prometheus/rules
+            # 挂载持久化数据卷（TSDB 数据）
+            - name: data
+              mountPath: /prometheus
+
+        - name: thanos
+          image: shixiaochuangk8s/thanosio-thanos:v0.40.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - sidecar
+            # 日志级别设为 debug（生产环境建议 info 或 warn）
+            - --log.level=debug
+            # 指向 Prometheus 的 TSDB 数据路径（与 Prometheus 容器共享）
+            - --tsdb.path=/prometheus
+            # Prometheus 实例的本地地址（Sidecar 通过此地址读取指标）
+            - --prometheus.url=http://localhost:9090
+            # 模板配置文件路径（原始模板，含变量）
+            - --reloader.config-file=/etc/prometheus/prometheus.yaml.tmpl
+            # 渲染后的实际配置文件路径（供 Prometheus 使用）
+            - --reloader.config-envsubst-file=/etc/prometheus-shared/prometheus.yaml
+            # 规则文件目录（用于热重载）
+            - --reloader.rule-dir=/etc/prometheus/rules/
+          # 暴露 Sidecar 的 HTTP 和 gRPC 端口
+          ports:
+            - name: http-sidecar
+              containerPort: 10902  # HTTP 监控和指标端口
+            - name: grpc
+              containerPort: 10901  # gRPC 用于 StoreAPI（被 Thanos Querier 调用）
+          # 环境变量：注入当前 Pod 名称（用于唯一标识）
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          # 资源请求与限制（与 Prometheus 相同）
+          resources:
+            requests:
+              memory: 1Gi
+              cpu: 500m
+            limits:
+              memory: 1Gi
+              cpu: 500m
+          # 挂载卷
+          volumeMounts:
+            # 挂载共享配置目录（写入渲染后的配置）
+            - name: prometheus-config-shared
+              mountPath: /etc/prometheus-shared/
+            # 挂载原始配置模板（.tmpl 文件）
+            - name: prometheus-config
+              mountPath: /etc/prometheus
+            # 挂载规则目录（用于 reloader 监听变更）
+            - name: prometheus-rules
+              mountPath: /etc/prometheus/rules
+            # 挂载 TSDB 数据目录（与 Prometheus 共享）
+            - name: data
+              mountPath: /prometheus
+  # 动态创建 PVC 的模板（每个 Pod 一个独立 PV）
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          app: prometheus
+      spec:
+        storageClassName: nfs-csi
+        # 访问模式：单节点读写（RWO）
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 2Gi

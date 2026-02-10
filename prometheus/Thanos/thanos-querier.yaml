@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: thanos-querier
+  namespace: kube-mon
+  labels:
+    app: thanos-querier
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: thanos-querier
+  template:
+    metadata:
+      labels:
+        app: thanos-querier
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                # 拓扑域：以主机名（节点）为单位进行反亲和
+                topologyKey: kubernetes.io/hostname
+                # 选择具有指定标签的 Pod 进行反亲和判断
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        # 避免将多个 thanos-querier Pod 调度到同一节点
+                        - thanos-querier
+      containers:
+        - name: thanos
+          image: shixiaochuangk8s/thanosio-thanos:v0.40.0
+          # 启动命令参数
+          args:
+            - query  # 启动 Thanos Query 组件
+            - --log.level=debug  # 日志级别设为 debug
+            - --query.replica-label=replica  # 忽略带有 replica 标签的时间序列副本（去重）
+            # 通过 DNS SRV 记录发现 Store Gateway 服务
+            - --endpoint=dnssrv+_grpc._tcp.prometheus.kube-mon.svc.cluster.local:10901
+          ports:
+            - name: http  # HTTP 服务端口（用于 UI、健康检查等）
+              containerPort: 10902
+            - name: grpc  # gRPC 服务端口（用于与其他 Thanos 组件通信）
+              containerPort: 10901
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 500m
+            limits:
+              memory: 512Mi
+              cpu: 500m
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+            initialDelaySeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+            initialDelaySeconds: 15
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: thanos-querier
+  namespace: kube-mon
+  labels:
+    app: thanos-querier
+spec:
+  ports:
+    - port: 9090
+      targetPort: http
+      name: http
+  selector:
+    app: thanos-querier

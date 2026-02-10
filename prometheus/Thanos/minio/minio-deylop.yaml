@@ -1,0 +1,152 @@
+kind: Service
+apiVersion: v1
+
+metadata:
+  name: minio-headless
+  namespace: minio-ns
+
+  labels:
+    app: minio
+
+spec:
+  clusterIP: None
+  # 关键：设置为 None，表示这是一个 Headless Service
+  # 不会分配虚拟 IP，而是直接返回 Pod 的 DNS 记录
+
+  selector:
+    app: minio
+
+  ports:
+    - name: http
+      port: 9000
+      # Service 暴露的端口
+      targetPort: 9000
+      # 转发到 Pod 内的端口
+---
+apiVersion: apps/v1
+kind: StatefulSet
+
+
+metadata:
+  # StatefulSet 名称
+  # Pod 名将会是：minio-0、minio-1、minio-2、minio-3
+  name: minio
+  namespace: minio-ns
+  labels:
+    app: minio
+
+spec:
+  serviceName: "minio-headless"
+  # 关联的 Headless Service
+  # 用于生成稳定的 Pod DNS 名称
+
+  replicas: 4
+
+  podManagementPolicy: "Parallel"
+  # Pod 启动/删除策略：
+  # Parallel = 并行创建（加快启动速度）
+  # 默认是 OrderedReady（顺序）
+
+  selector:
+    matchLabels:
+      app: minio
+
+  template:
+    metadata:
+      labels:
+        app: minio
+
+    spec:
+      containers:
+      - name: minio
+        image: shixiaochuangk8s/minio:RELEASE.2024-03-10T02-53-48Z
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: data
+          # 挂载的卷名称，对应 volumeClaimTemplates
+
+          mountPath: /data
+          # 容器内数据目录，MinIO 存储数据的位置
+
+        args:
+        - server
+        # 以 server（分布式）模式启动 MinIO
+
+        - http://minio-{0...3}.minio-headless.$(MINIO_POD_NAMESPACE).svc.cluster.local/data
+        # 分布式 MinIO 节点列表
+        # minio-0 ~ minio-3
+        # 使用 Headless Service + StatefulSet 固定 DNS
+        # $(MINIO_POD_NAMESPACE) 由环境变量动态注入
+
+        - "--address=:9000"
+        # MinIO API 服务监听端口
+
+        - "--console-address=:9001"
+        # MinIO Web Console 监听端口
+
+        env:
+        # -------- 环境变量定义 --------
+          # MinIO 管理员用户名
+        - name: MINIO_ROOT_USER
+          valueFrom:
+            secretKeyRef:
+              name: minio-secret
+              key: MINIO_ROOT_USER
+          # MinIO 管理员密码
+        - name: MINIO_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: minio-secret
+              key: MINIO_ROOT_PASSWORD
+          # 当前 Pod 所在的 namespace
+        - name: MINIO_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+              # 从 Pod 元数据中自动获取 namespace
+
+        # 存活探针：判断容器是否“还活着”
+        livenessProbe:
+          # 连续失败 3 次才认为失败
+          failureThreshold: 3
+
+          # MinIO 提供的健康检查接口
+          httpGet:
+            path: /minio/health/live
+            port: http
+            # 使用前面定义的 http 端口（9000）
+            scheme: HTTP
+            # 使用 HTTP 协议
+
+          # 容器启动后 120 秒才开始探测
+          # 分布式 MinIO 启动较慢，这是必要的
+          initialDelaySeconds: 120
+          # 每 15 秒检查一次
+          periodSeconds: 15
+          # 成功 1 次即视为正常
+          successThreshold: 1
+          # 单次探测超时时间
+          timeoutSeconds: 10
+        ports:
+        - containerPort: 9000
+          # 容器内端口
+          name: http
+          # 端口名称（与 Service、Probe 对应）
+          protocol: TCP
+          # 使用 TCP 协议
+
+  volumeClaimTemplates:
+  # 为 StatefulSet 中的每个 Pod 自动创建 PVC
+  - metadata:
+      name: data
+      # PVC 名称
+      # 每个 Pod 会生成一个：
+      # data-minio-0、data-minio-1 ...
+
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
+      storageClassName: "nfs-csi"

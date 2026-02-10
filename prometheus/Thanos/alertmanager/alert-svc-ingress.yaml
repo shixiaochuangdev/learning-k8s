@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  namespace: kube-mon
+  labels:
+    app: alertmanager
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 9093
+      targetPort: http
+      protocol: TCP
+  selector:
+    app: alertmanager
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: alertmanager
+  namespace: kube-mon
+  labels:
+    app: alertmanager
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: alert.shixiaochuang.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: alertmanager
+                port:
+                  number: 9093

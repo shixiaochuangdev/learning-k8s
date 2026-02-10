@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dns-srv-checker
+  namespace: kube-mon
+  labels:
+    app: dns-srv-checker
+spec:
+  restartPolicy: Never  # 只运行一次，便于查看日志
+  containers:
+    - name: netshoot
+      image: shixiaochuangk8s/netshoot:v0.14
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          echo "=== 查询 _grpc._tcp.prometheus.kube-mon.svc.cluster.local 的 SRV 记录 ===";
+          dig SRV _grpc._tcp.prometheus.kube-mon.svc.cluster.local +short;
+          echo "";
+          echo "=== 查询 A 记录（验证 Headless 解析）===";
+          dig A prometheus-0.prometheus.kube-mon.svc.cluster.local +short;
+          dig A prometheus-1.prometheus.kube-mon.svc.cluster.local +short;
+          echo "";
+          echo "=== 如果需要交互式调试，请将 restartPolicy 改为 'Always' 并 exec 进入 ===";
+          sleep 3600;  # 保持 Pod 运行 1 小时，方便 kubectl exec

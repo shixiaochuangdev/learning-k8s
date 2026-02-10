@@ -1,0 +1,114 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: thanos-ruler
+  namespace: kube-mon
+  labels:
+    app: thanos-ruler
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: thanos-ruler
+  # Headless Service 名称（用于 Pod 网络标识和 DNS 解析）
+  serviceName: thanos-rule
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: thanos-ruler
+        thanos-store-api: 'true'
+    spec:
+      securityContext:
+        runAsUser: 65534
+        fsGroup: 65534
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - thanos-ruler
+      containers:
+        - name: thanos-ruler
+          # 使用的镜像（注意：此处为官方镜像 v0.25.1，较旧）
+          image: thanosio/thanos:v0.25.1
+          args:
+            - rule
+            # gRPC 监听地址（StoreAPI 和内部通信）
+            - --grpc-address=0.0.0.0:10901
+            # HTTP 监听地址（UI、指标、健康检查）
+            - --http-address=0.0.0.0:10902
+            # 告警规则文件路径（支持通配符）
+            - --rule-file=/etc/thanos/rules/*.yml
+            # 对象存储配置文件路径（用于上传告警记录）
+            - --objstore.config-file=/etc/secret/thanos.yaml
+            # 本地数据目录（存储临时状态）
+            - --data-dir=/var/thanos/rule
+            # 为当前实例添加唯一标签（用于去重）
+            - --label=rule_replica="$(NAME)"
+            # 在发送告警到 Alertmanager 时，移除 rule_replica 标签（避免重复告警）
+            - --alert.label-drop=rule_replica
+            # 查询后端地址：通过 DNS SRV 记录发现 Thanos Querier（用于评估规则）
+            - --query=dnssrv+_http._tcp.thanos-querier.kube-mon.svc.cluster.local
+            # 指定 Alertmanager 地址
+            -  --alertmanagers.url=http://alertmanager.kube-mon.svc.cluster.local:9093
+          # 容器暴露的端口
+          ports:
+            - containerPort: 10901  # gRPC 端口（StoreAPI）
+              name: grpc
+            - containerPort: 10902  # HTTP 端口（UI 和 API）
+              name: http
+          env:
+            - name: NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: 10902
+              scheme: HTTP
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: 10902
+              scheme: HTTP
+          volumeMounts:
+            # 挂载持久化数据卷（TSDB 状态）
+            - mountPath: /var/thanos/rule
+              name: data
+              readOnly: false
+            # 挂载对象存储密钥（Secret）
+            - name: object-storage-config
+              mountPath: /etc/secret
+              readOnly: false
+            # 挂载告警规则文件（ConfigMap）
+            - name: thanos-rules
+              mountPath: /etc/thanos/rules
+
+      volumes:
+        # 对象存储配置（来自 Secret）
+        - name: object-storage-config
+          secret:
+            secretName: thanos-objectstorage
+        # 告警规则配置（来自 ConfigMap）
+        - name: thanos-rules
+          configMap:
+            name: prometheus-rules-deployment
+
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: nfs-csi
+        resources:
+          requests:
+            storage: 1Gi
