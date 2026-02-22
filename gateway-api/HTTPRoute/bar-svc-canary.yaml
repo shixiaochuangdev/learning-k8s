@@ -1,0 +1,71 @@
+# === ConfigMap: 金丝雀版 ===
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bar-canary-nginx-conf
+  namespace: gateway-api-ns
+data:
+  nginx.conf: |
+    events { worker_connections 1024; }
+    http {
+        server {
+            listen 8080;
+            location / {
+                add_header Content-Type text/plain;
+                add_header X-Service-Version "canary";
+                return 200 '[bar-svc-canary] Canary Testing Version \n';
+            }
+            location /health {
+                return 200 'OK\n';
+            }
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bar-canary-deploy
+  namespace: gateway-api-ns
+spec:
+  replicas: 1  # 金丝雀副本数较少
+  selector:
+    matchLabels:
+      app: bar-svc-canary
+  template:
+    metadata:
+      labels:
+        app: bar-svc-canary
+    spec:
+      containers:
+      - name: nginx
+        image:  shixiaochuangk8s/nginx:1.15-alpine
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: nginx-conf
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: nginx-conf
+        configMap:
+          name: bar-canary-nginx-conf
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bar-svc-canary
+  namespace: gateway-api-ns
+spec:
+  selector:
+    app: bar-svc-canary
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    protocol: TCP

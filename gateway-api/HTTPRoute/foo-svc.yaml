@@ -1,0 +1,74 @@
+# === ConfigMap ===
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: foo-nginx-conf
+  namespace: gateway-api-ns
+data:
+  nginx.conf: |
+    events { worker_connections 1024; }
+    http {
+        server {
+            listen 8080;
+            location /login {
+                add_header Content-Type text/plain;
+                return 200 '[foo-svc] Path: /login on foo.shixiaochuang.org\n';
+            }
+            location / {
+                add_header Content-Type text/plain;
+                return 404 ' [foo-svc] Only /login is routed here\n';
+            }
+            location /health {
+                return 200 'OK\n';
+            }
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: foo-deploy
+  namespace: gateway-api-ns
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: foo-svc
+  template:
+    metadata:
+      labels:
+        app: foo-svc
+    spec:
+      containers:
+      - name: nginx
+        image: shixiaochuangk8s/nginx:1.15-alpine
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: nginx-conf
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: nginx-conf
+        configMap:
+          name: foo-nginx-conf
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: foo-svc
+  namespace: gateway-api-ns
+spec:
+  selector:
+    app: foo-svc
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    protocol: TCP

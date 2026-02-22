@@ -1,0 +1,125 @@
+# ==================== 路由 1：基础主机名路由 ====================
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+  namespace: gateway-api-ns
+spec:
+  # 父引用列表，指定此路由绑定到哪个 Gateway
+  parentRefs:
+    # 引用名为 example-gateway 的 Gateway 资源
+  - name: example-gateway
+    # （可选）如果 Gateway 在不同命名空间，需在此显式指定
+    # namespace: gateway-api-ns
+    # （可选）指定 Gateway 的监听器名称，不指定则匹配所有兼容的监听器
+    # sectionName: http
+    # （可选）端口号，用于精确匹配特定端口的监听器
+    # port: 80
+  # 允许匹配的主机名列表（对应 HTTP Host 请求头或 TLS SNI）
+  hostnames:
+    # 只处理 Host 为 "shixiaochuang.org" 的请求
+    # 支持精确匹配或通配符（如 "*.example.com"）
+  - "shixiaochuang.org"
+  # 路由规则列表，按顺序匹配执行（命中即停止）
+  rules:
+    # 第一条（也是唯一一条）路由规则
+  - # （可选）匹配条件列表，所有条件需同时满足（AND 逻辑）
+    # 如果省略 matches，则匹配所有请求
+    # matches:
+    # - path:
+    #     type: PathPrefix
+    #     value: /
+    # 后端服务引用列表，匹配成功后转发到这些服务
+    backendRefs:
+      # 目标 Kubernetes Service 名称
+    - name: example-svc
+      # 目标 Service 的端口号
+      port: 80
+      # （可选）目标 Service 所在命名空间，默认与 HTTPRoute 同命名空间
+      # namespace: gateway-api-ns
+      # （可选）服务权重，用于流量分割，范围 0-100，默认 100
+      # weight: 100
+      # （可选）后端服务分组，用于引用非 Service 资源（如 TraefikService）
+      # group: ""
+      # kind: Service
+---
+# ==================== 路由 2：主机名 + 路径前缀匹配路由 ====================
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: foo-route
+  namespace: gateway-api-ns
+spec:
+  # 绑定的父 Gateway
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+    # 只处理子域名 foo.shixiaochuang.org 的请求
+  - "foo.shixiaochuang.org"
+  rules:
+    # 第一条规则
+  - # 匹配条件列表，所有条件需同时满足（AND 逻辑）
+    matches:
+      # 第一个匹配条件：路径匹配
+    - # 路径匹配配置
+      path:
+        # 匹配类型：PathPrefix 表示前缀匹配
+        # 可选值：PathPrefix（前缀）| Exact（精确）| RegularExpression（正则）
+        type: PathPrefix
+        # 匹配路径前缀为 /login 的请求
+        # 例如：/login、/login/user、/login/action 都会匹配
+        value: /login
+    # 匹配成功后的后端服务
+    backendRefs:
+    - name: foo-svc
+      port: 8080
+
+
+---
+# ==================== 路由 3：主机名 + 请求头匹配（灰度/金丝雀路由） ====================
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: bar-route
+  namespace: gateway-api-ns
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "bar.shixiaochuang.org"
+  # 路由规则列表（按顺序匹配，命中即停止）
+  rules:
+    # ==================== 规则 1：金丝雀规则（高优先级） ====================
+    # 用于匹配特定请求头的灰度流量
+  - # 匹配条件
+    matches:
+      # 第一个匹配条件：请求头匹配
+    - # 请求头匹配配置列表
+      headers:
+        # 第一个请求头匹配规则
+      - # 匹配类型：Exact 表示完全相等
+        # 可选值：Exact（精确）| RegularExpression（正则）
+        type: Exact
+        # 请求头名称（HTTP 头字段名，大小写不敏感）
+        name: env
+        # 请求头值，只匹配 env: canary 的请求
+        value: canary
+    # 匹配成功后的后端：金丝雀版本服务
+    backendRefs:
+      # 金丝雀服务名称
+    - name: bar-svc-canary
+      # 金丝雀服务端口
+      port: 8080
+      # （可选）权重，多后端时用于流量比例分配
+      # weight: 10
+
+    # ==================== 规则 2：默认规则（兜底） ====================
+    # 注意：HTTPRoute 中多个 rules 是 OR 关系，但每条 rule 内的 matches 是 AND 关系
+    # 此处写法实际表示：第二条规则没有 matches，匹配所有剩余请求
+  - # 无 matches 字段，表示匹配所有未命中上一条规则的请求
+    # 后端：生产环境稳定版本服务
+    backendRefs:
+      # 生产服务名称
+    - name: bar-svc
+      # 生产服务端口
+      port: 8080

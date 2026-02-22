@@ -1,0 +1,24 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: whoami-https
+  namespace: gateway-api-ns
+spec:
+  parentRefs:
+    - name: traefik
+      sectionName: websecure
+      kind: Gateway
+
+  hostnames:
+    - tls.shixiaochuang.org
+
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+
+      backendRefs:
+        - name: whoami
+          namespace: gateway-api-ns
+          port: 80

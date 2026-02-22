@@ -1,0 +1,21 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: gateway-api-ns
+spec:
+  # 指定使用的 GatewayClass 名称，引用控制器实现（如 traefik、nginx 等）
+  gatewayClassName: traefik
+  # 监听器配置列表，定义 Gateway 监听的端口和协议
+  listeners:
+    # 第一个监听器配置
+  - # 监听器的名称，用于标识和引用
+    name: http
+    # 指定监听协议类型，支持 HTTP/HTTPS/TCP/TLS/UDP 等
+    protocol: HTTP
+    # 指定监听的端口号
+    port: 80
+    # （可选）允许绑定的路由来源，默认允许同命名空间
+    # allowedRoutes:
+    #   namespaces:
+    #     from: Same
