@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-http-demo
+  namespace: pod-ns
+spec:
+  terminationGracePeriodSeconds: 30
+
+  containers:
+  - name: nginx
+    image:  shixiaochuangk8s/nginx:1.17.2
+    ports:
+    - containerPort: 80
+
+    lifecycle:
+      postStart:
+        httpGet:
+          path: /                  # URI 地址
+          port: 80                 # 端口号
+          scheme: HTTP             # 协议 (HTTP 或 HTTPS)
+
+      preStop:
+        exec:
+          command:
+          - /bin/sh
+          - -c
+          - echo "Pod is terminating..." && sleep 5

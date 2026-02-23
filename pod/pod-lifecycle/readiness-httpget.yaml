@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: readiness-httpget
+  namespace: pod-ns
+spec:
+  containers:
+    - name: c1
+      image: shixiaochuangk8s/nginx:1.14-alpine
+      imagePullPolicy: IfNotPresent
+      ports:
+        - name: http
+          containerPort: 80
+      readinessProbe: # 这里由liveness换成了readiness
+        httpGet:
+          port: http
+          path: /index.html
+        initialDelaySeconds: 3
+        periodSeconds: 5

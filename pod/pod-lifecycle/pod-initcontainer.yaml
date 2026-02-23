@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-initcontainer
+  namespace: pod-ns
+spec:
+  containers:
+    - name: main-container
+      image: shixiaochuangk8s/nginx:1.17.1
+      ports:
+        - name: nginx-port
+          containerPort: 80
+  initContainers:
+    - name: test-mysql
+      image: shixiaochuangk8s/busybox:1.30
+      command: [ 'sh', '-c', 'until ping 192.168.200.201 -c 1 ; do echo waiting for mysql...; sleep 2; done;' ]
+    - name: test-redis
+      image: shixiaochuangk8s/busybox:1.30
+      command: [ 'sh', '-c', 'until ping 192.168.200.202 -c 1 ; do echo waiting for reids...; sleep 2; done;' ]

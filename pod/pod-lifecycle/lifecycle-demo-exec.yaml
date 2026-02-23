@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lifecycle-demo-exec
+  namespace: pod-ns
+spec:
+  containers:
+  - name: app
+    image: shixiaochuangk8s/busybox:1.28.3
+    command: ["/bin/sh", "-c", "echo healthy > /tmp/healthy && sleep 3600"]
+
+    lifecycle:
+      postStart:
+        exec:
+          command:
+          - cat
+          - /tmp/healthy
+
+      preStop:
+        exec:
+          command:
+          - /bin/sh
+          - -c
+          - echo "Container is stopping..." > /tmp/stopping && sleep 5
