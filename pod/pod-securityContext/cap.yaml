@@ -1,0 +1,41 @@
+# 不加 capabilities（默认权限）
+apiVersion: v1
+kind: Pod
+metadata:
+  name: default-cap
+  namespace: sc-ns
+spec:
+  containers:
+  - name: c1
+    image: shixiaochuangk8s/busybox:1.30
+    command: ["sh", "-c", "ip link set lo down"]
+---
+# 增加 NET_ADMIN 能力
+apiVersion: v1
+kind: Pod
+metadata:
+  name: add-cap
+  namespace: sc-ns
+spec:
+  containers:
+  - name: c1
+    image: shixiaochuangk8s/busybox:1.30
+    command: ["sh", "-c", "ip link set lo down && echo 'Loopback disabled'"]
+    securityContext:
+      capabilities:
+        add: ["NET_ADMIN"]
+---
+# 删除所有能力（最安全）
+apiVersion: v1
+kind: Pod
+metadata:
+  name: drop-all
+  namespace: sc-ns
+spec:
+  containers:
+  - name: c1
+    image: shixiaochuangk8s/busybox:1.30
+    command: ["sh", "-c", "ip link set lo down"]
+    securityContext:
+      capabilities:
+        drop: ["ALL"]

@@ -18,5 +18,3 @@ spec:
       volumeMounts:
         - name: sec-ctx-vol
           mountPath: /pod/demo
-      securityContext:
-        allowPrivilegeEscalation: false
