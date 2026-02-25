@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ceph-secret
+data:
+  key: AQCvjp1pA24iHRAAynC4TvV/2+M/TuDdU+emQw==
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: cephfs-pv
+  labels:
+    pv: cephfs-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  cephfs:
+    monitors:
+      - 192.168.200.248:6789
+      - 192.168.200.247:6789
+      - 192.168.200.246:6789
+    user: fsclient
+    secretRef:
+      name: ceph-secret
+    readOnly: false
+  persistentVolumeReclaimPolicy: Delete
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: cephfs-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+  selector:
+    matchLabels:
+      pv: cephfs-pv
