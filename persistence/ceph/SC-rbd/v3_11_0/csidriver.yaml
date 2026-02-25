@@ -1,0 +1,22 @@
+# 指定 Kubernetes API 版本，storage.k8s 相关资源使用 v1
+apiVersion: storage.k8s.io/v1
+
+# 资源类型：CSIDriver（CSI 驱动定义）
+kind: CSIDriver
+
+metadata:
+  # CSI 驱动的名称，Ceph RBD CSI 固定必须为 rbd.csi.ceph.com
+  name: "rbd.csi.ceph.com"
+
+spec:
+  # 是否需要 attach 操作（RBD 块存储必须为 true）
+  attachRequired: true
+
+  # 挂载时是否传递 Pod 信息给 CSI Driver（这里关闭）
+  podInfoOnMount: false
+
+  # 是否支持 SELinux 挂载（建议开启以兼容安全策略）
+  seLinuxMount: true
+
+  # PVC 挂载时 fsGroup 处理策略，File 表示基于文件系统设置权限
+  fsGroupPolicy: File
