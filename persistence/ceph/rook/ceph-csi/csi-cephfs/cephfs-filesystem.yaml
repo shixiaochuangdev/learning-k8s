@@ -1,0 +1,51 @@
+apiVersion: ceph.rook.io/v1
+kind: CephFilesystem
+metadata:
+  name: cephfs                 # ←  cephfs（必须和 StorageClass.fsName 一致）
+  namespace: rook-ceph
+spec:
+  metadataPool:
+    replicated:
+      size: 3
+      requireSafeReplicaSize: true
+    parameters:
+      compression_mode: none
+  dataPools:
+    - name: replicated
+      failureDomain: host
+      replicated:
+        size: 3
+        requireSafeReplicaSize: true
+      parameters:
+        compression_mode: none
+  preserveFilesystemOnDelete: true
+  metadataServer:
+    activeCount: 1
+    activeStandby: true
+    placement:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - rook-ceph-mds
+            topologyKey: kubernetes.io/hostname
+    livenessProbe:
+      disabled: false
+    startupProbe:
+      disabled: false
+  mirroring:
+    enabled: false
+---
+apiVersion: ceph.rook.io/v1
+kind: CephFilesystemSubVolumeGroup
+metadata:
+  name: cephfs-csi              # ← 建议同步改名（非强制，但更清晰）
+  namespace: rook-ceph
+spec:
+  name: csi
+  filesystemName: cephfs       # ← 必须指向上面的 CephFilesystem.name
+  pinning:
+    distributed: 1

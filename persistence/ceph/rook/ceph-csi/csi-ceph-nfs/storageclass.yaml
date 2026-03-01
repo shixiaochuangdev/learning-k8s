@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: csi-cephfs-secret
+  namespace: ceph-csi-nfs
+stringData:
+  userID: "fsclient"
+  userKey: "AQApE6Rpsm5BKBAAl22AIfxtRcBZAKhEUazB1Q=="
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: csi-nfs-sc
+provisioner: nfs.csi.ceph.com
+parameters:
+  # NFS 集群名称（Rook CephNFS CR 的 metadata.name）
+  nfsCluster: k8s-nfs
+
+  # 直接使用 LoadBalancer IP
+  server: 192.168.200.11
+
+  # 必须确保 ConfigMap 中也用完整 UUID
+  clusterID: "0f8828f4-09ca-4c4c-b98f-11141a705a7e"
+
+  # CephFS 文件系统名称
+  fsName: cephfs
+
+  csi.storage.k8s.io/provisioner-secret-name: csi-cephfs-secret
+  csi.storage.k8s.io/provisioner-secret-namespace: ceph-csi-nfs
+
+  csi.storage.k8s.io/controller-expand-secret-name: csi-cephfs-secret
+  csi.storage.k8s.io/controller-expand-secret-namespace: ceph-csi-nfs
+
+  csi.storage.k8s.io/node-stage-secret-name: csi-cephfs-secret
+  csi.storage.k8s.io/node-stage-secret-namespace: ceph-csi-nfs
+
+  volumeNamePrefix: nfs-export-
+
+reclaimPolicy: Delete
+allowVolumeExpansion: true

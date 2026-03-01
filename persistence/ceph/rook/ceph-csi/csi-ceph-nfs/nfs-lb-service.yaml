@@ -1,0 +1,29 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rook-ceph-nfs-k8s-nfs-a-lb
+  namespace: rook-ceph
+  labels:
+    app: rook-ceph-nfs
+    ceph_nfs: k8s-nfs
+    rook_cluster: rook-ceph
+  annotations:
+    lb.kubesphere.io/v1alpha1: openelb
+    protocol.openelb.kubesphere.io/v1alpha1: layer2
+    eip.openelb.kubesphere.io/v1alpha2: eip-pool
+spec:
+  type: LoadBalancer
+  selector:
+    app: rook-ceph-nfs
+    ceph_nfs: k8s-nfs
+    nfs: k8s-nfs-a
+  ports:
+    - name: nfs
+      port: 2049                     # NFS 主端口
+      targetPort: 2049
+      protocol: TCP
+    - name: nfs-metrics
+      port: 9587                     # NFS 监控端口（可选）
+      targetPort: 9587
+      protocol: TCP

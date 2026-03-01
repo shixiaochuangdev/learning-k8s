@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: prometheus-ns
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets:
+
+    rule_files:
+
+    scrape_configs:
+      # Prometheus 自身
+      - job_name: "prometheus"
+        static_configs:
+          - targets: ["localhost:9090"]
+
+      # Ceph MGR（最重要）
+      - job_name: "rook-ceph-mgr"
+        static_configs:
+          - targets:
+              - rook-ceph-mgr.rook-ceph.svc.cluster.local:9283
+
+      # Ceph Exporter
+      - job_name: "rook-ceph-exporter"
+        static_configs:
+          - targets:
+              - rook-ceph-exporter.rook-ceph.svc.cluster.local:9926
