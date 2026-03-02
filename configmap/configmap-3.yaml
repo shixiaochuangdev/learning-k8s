@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-cm2
+  namespace: configmap-ns
+spec:
+  containers:
+    - name: busybox
+      image: shixiaochuangk8s/busybox:1.30
+      args: [ "/bin/sh", "-c", "sleep 10000" ]
+      volumeMounts: # 用volume挂载方式
+        - name: vol-cm                              # 对应下面的volume名
+          mountPath: "/etc/mysql"                   # 挂载到容器内部的路径
+          readOnly: true                            # 只读
+
+  volumes:
+    - name: vol-cm                                # 卷名称
+      configMap:
+        name: cm2                                 # configmap的名称

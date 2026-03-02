@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-cm1
+  namespace: configmap-ns
+spec:
+  containers:
+    - name: busybox
+      image: shixiaochuangk8s/busybox:1.30
+      args: [ "/bin/sh", "-c", "sleep 10000" ]
+      envFrom: # env方式
+        - configMapRef:
+            name: cm1                        # configmap名称
