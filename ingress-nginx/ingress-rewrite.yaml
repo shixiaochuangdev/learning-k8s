@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rewrite
+  namespace: ingress-ns
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2   # rewrite 规则：将匹配的正则分组 $2 作为新路径
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: www.shixiaochuang.org
+      http:
+        paths:                         # path 路由列表
+          - path: /gateway(/|$)(.*)    # 使用正则匹配 /gateway/ 开头的所有路径，并捕获后面的内容
+            pathType: ImplementationSpecific   # 使用 Ingress-NGINX 特有的正则匹配模式
+            backend:                   # 指定后端 Service
+              service:
+                name: my-nginx         # 请求将被转发到名为 my-nginx 的 Service
+                port:
+                  number: 80           # 发往 Service 的 80 端口

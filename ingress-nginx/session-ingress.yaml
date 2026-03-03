@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: session-affinity-ingress
+  namespace: ingress-ns
+  annotations:
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/session-cookie-name: "cookie-session"
+    nginx.ingress.kubernetes.io/session-affinity: "true"          # 启用会话亲和性
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: session.shixiaochuang.org  # 根据需要配置主机名
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: session-affinity
+            port:
+              name: affinity

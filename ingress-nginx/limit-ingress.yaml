@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-with-limit
+  namespace: ingress-ns
+  annotations:
+    nginx.ingress.kubernetes.io/limit-rps: "1"   ### 限流的配置
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: limit.shixiaochuang.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: my-nginx
+                port:
+                  number: 80

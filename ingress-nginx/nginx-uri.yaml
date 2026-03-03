@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-uri-1
+  namespace: ingress-ns
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx-uri-1
+  template:
+    metadata:
+      labels:
+        app: nginx-uri-1
+    spec:
+      containers:
+        - name: c1
+          image: shixiaochuangk8s/nginx:1.15-alpine
+          imagePullPolicy: IfNotPresent
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service-uri-1
+  namespace: ingress-ns
+  labels:
+    app: nginx-uri-1
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+  selector:
+    app: nginx-uri-1
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-uri-2
+  namespace: ingress-ns
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx-uri-2
+  template:
+    metadata:
+      labels:
+        app: nginx-uri-2
+    spec:
+      containers:
+        - name: c1
+          image: shixiaochuangk8s/nginx:1.15-alpine
+          imagePullPolicy: IfNotPresent
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service-uri-2
+  namespace: ingress-ns
+  labels:
+    app: nginx-uri-2
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+  selector:
+    app: nginx-uri-2

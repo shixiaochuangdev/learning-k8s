@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-uri
+  namespace: ingress-ns
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: uri.shixiaochuang.org
+    http:
+      paths:
+      - path: /svc1
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-service-uri-1
+            port:
+              number: 80
+      - path: /svc2
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-service-uri-2
+            port:
+              number: 80
