@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ns1                                                     # 创建ns1命名空间
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy-nginx-n1
+  namespace: ns1                                                # 属于ns1命名空间
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-n1
+  template:
+    metadata:
+      labels:
+        app: nginx-n1
+    spec:
+      containers:
+        - name: nginx
+          image: shixiaochuangk8s/nginx:1.15-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc1                                # 服务名
+  namespace: ns1                            # 属于ns1命名空间
+spec:
+  selector:
+    app: nginx-n1
+  clusterIP: None                           # 无头service
+  ports:
+    - port: 80
+      targetPort: 80
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: external-svc1
+  namespace: ns1                            #  属于ns1命名空间
+spec:
+  type: ExternalName
+  externalName: svc2.ns2.svc.cluster.local   # 将ns2空间的svc2服务引入到ns1命名空间

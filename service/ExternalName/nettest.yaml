@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nettest
+  namespace: service-ns
+spec:
+  containers:
+    - name: nettest
+      image: shixiaochuangk8s/netshoot:v0.14
+      command: ["/bin/bash"]
+      stdin: true
+      tty: true

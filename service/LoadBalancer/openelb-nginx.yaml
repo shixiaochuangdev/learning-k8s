@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openelb-nginx
+  namespace: service-ns
+spec:
+  selector:
+    matchLabels:
+      app: openelb-nginx
+  template:
+    metadata:
+      labels:
+        app: openelb-nginx
+    spec:
+      containers:
+        - name: nginx
+          image: shixiaochuangk8s/nginx:1.25
+          ports:
+            - containerPort: 80

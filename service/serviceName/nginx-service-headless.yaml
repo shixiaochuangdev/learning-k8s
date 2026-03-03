@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-service-headless
+  namespace: service-ns
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx-headless
+  template:
+    metadata:
+      labels:
+        app: nginx-headless
+    spec:
+      containers:
+        - name: nginx-smart
+          image: shixiaochuangk8s/nginx:1.15-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: headless-service
+  namespace:  service-ns
+spec:
+  type: ClusterIP     # ClusterIP类型,也是默认类型
+  clusterIP: None     # None就代表是无头service,即可创建headliness Service
+  ports: # 指定service 端口及容器端口
+    - port: 80                            # service ip中的端口
+      protocol: TCP
+      targetPort: 80                      # pod中的端口
+  selector: # 指定后端pod标签
+    app: nginx-headless
