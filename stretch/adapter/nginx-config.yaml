@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: metrics-ns
+data:
+  nginx.conf: |
+    worker_processes auto;
+
+    events {
+        worker_connections 1024;
+    }
+
+    http {
+        include       mime.types;
+        default_type  application/octet-stream;
+
+        sendfile        on;
+        keepalive_timeout  65;
+
+        server {
+            listen 80;
+            server_name localhost;
+
+            location / {
+                root   /usr/share/nginx/html;
+                index  index.html index.htm;
+            }
+
+            location /status {
+                stub_status;        # 启用 Nginx 状态监控
+                access_log off;     # 关闭该路径的访问日志
+
+                # allow 172.31.0.0/16;   # 允许特定网段访问
+                # deny all;             # 拒绝其他所有访问
+            }
+        }
+    }

@@ -1,0 +1,44 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+
+metadata:
+  name: nginx-custom-hpa
+  namespace: metrics-ns
+
+spec:
+  # 指定要被扩缩容的目标资源
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    # 要被扩缩容的 Deployment 名称
+    name: nginx-with-exporter
+
+  # 最小副本数（低于这个不会再缩容）
+  minReplicas: 2
+
+  # 最大副本数（超过这个不会再扩容）
+  maxReplicas: 5
+
+  # 指标配置（可以配置多个）
+  metrics:
+
+    # 指标类型为 Pods 类型
+    # 表示：每个 Pod 单独计算指标，然后求平均值
+    - type: Pods
+
+      pods:
+        # 指标名称（来自 Prometheus Adapter 暴露的名称）
+        metric:
+          name: nginx_http_requests_per_second
+
+        # 目标值设置
+        target:
+
+          # 使用平均值类型（每个 Pod 的平均值）
+          type: AverageValue
+
+          # 目标阈值
+          # 10 表示 10 QPS
+          # 500m 表示 0.5 QPS
+          # m 是 milli（千分之一）
+          averageValue: 200m
