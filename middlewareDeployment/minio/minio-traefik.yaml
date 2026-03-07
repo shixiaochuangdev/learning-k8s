@@ -1,0 +1,20 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: minio
+  namespace: minio-ns
+spec:
+  entryPoints:
+    - web
+  routes:
+  - match: Host(`minioui.shixiaochuang.net`)
+    kind: Rule
+    services:
+    - name: minio
+      port: 9001
+
+  - match: Host(`minioapi.shixiaochuang.net`)
+    kind: Rule
+    services:
+    - name: minio
+      port: 9000
