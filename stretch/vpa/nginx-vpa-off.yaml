@@ -1,0 +1,46 @@
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+
+metadata:
+  name: nginx-vpa-off
+  namespace: vpa
+
+spec:
+  # 目标引用：指定此 VPA 要监控和管理的 Kubernetes 工作负载对象
+  targetRef:
+    # 目标对象的 API 版本：Deployment 资源属于 apps/v1 组
+    apiVersion: "apps/v1"
+    # 目标对象的资源类型：此处指定为 Deployment 部署
+    kind: Deployment
+    # 目标对象的名称：必须与要伸缩的 Deployment 名称完全一致
+    name: nginx-vpa
+
+  # 更新策略：控制 VPA 如何对 Pod 执行资源更新操作
+  updatePolicy:
+    # 更新模式：决定 VPA 的自动执行行为
+    # ┌─────────────────────────────────┐
+    # │ "Off"     → 仅计算推荐值，不自动更新 Pod（手动决策）│
+    # │ "Initial" → 仅在 Pod 创建时应用推荐值，运行中不更新 │
+    # │ "Auto"    → 自动驱逐并重建 Pod 以应用新资源值      │
+    # └─────────────────────────────────┘
+    updateMode: "Off"
+
+  # 资源策略：定义容器资源请求/限制的计算边界和规则
+  resourcePolicy:
+    # 容器策略列表：可为 Deployment 中的不同容器分别配置策略
+    containerPolicies:
+      # 策略项 1：针对指定容器的资源控制规则
+      - # 容器名称：必须与 Deployment 中 containers[].name 字段一致
+        containerName: "nginx"
+        # 最小允许值：VPA 推荐值不会低于此下限（保障最低资源）
+        minAllowed:
+          # CPU 最小值：250 毫核 = 0.25 核，防止推荐值过小导致容器被限流
+          cpu: "250m"
+          # 内存最小值：100 MiB，防止推荐值过小导致 OOM Killed
+          memory: "100Mi"
+        # 最大允许值：VPA 推荐值不会超过此上限（控制成本/避免过度分配）
+        maxAllowed:
+          # CPU 最大值：2000 毫核 = 2 核，防止单容器占用过多 CPU
+          cpu: "2000m"
+          # 内存最大值：2048 MiB = 2 GiB，防止内存推荐值无限增长
+          memory: "2048Mi"

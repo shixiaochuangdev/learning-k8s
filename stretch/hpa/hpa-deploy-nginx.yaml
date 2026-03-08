@@ -1,0 +1,35 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: nginx-hpa
+  namespace: hpa
+
+spec:
+  # 伸缩目标引用，指定 HPA 需要监控和控制的工作负载
+  scaleTargetRef:
+    # 目标资源的 API 版本，通常为 apps/v1
+    apiVersion: apps/v1
+    # 目标资源的种类，此处指定为 Deployment 部署
+    kind: Deployment
+    # 目标资源的名称，必须与要伸缩的 Deployment 名称一致
+    name: nginx-hpa
+
+  # 最小副本数，HPA 缩容时 Pod 数量不会低于此值
+  minReplicas: 1
+  # 最大副本数，HPA 扩容时 Pod 数量不会超过此值
+  maxReplicas: 10
+
+  # 指标列表，定义触发自动伸缩的具体监控指标集合
+  metrics:
+    # 指标类型，此处选择资源型指标（如 CPU 或内存）
+    - type: Resource
+      # 资源指标配置块，详细说明具体的资源类型
+      resource:
+        # 资源名称，指定监控 CPU 使用率
+        name: cpu
+        # 目标值配置，定义触发伸缩动作的阈值条件
+        target:
+          # 目标类型，此处使用利用率百分比模式
+          type: Utilization
+          # 平均利用率目标，设定值为 50%（超过扩容，低于缩容）
+          averageUtilization: 50

@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nginx-vpa-auto
+  name: nginx-auto
+  namespace: vpa
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx-vpa-auto
+  template:
+    metadata:
+      labels:
+        app: nginx-vpa-auto
+    spec:
+      containers:
+      - name: nginx
+        image: shixiaochuangk8s/nginx:1.17.3
+        resources:
+          requests:
+            cpu: 100m
+            memory: 50Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-vpa-auto
+  namespace: vpa
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+  selector:
+    app: nginx-vpa-auto

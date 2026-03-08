@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nginx-hpa
+  name: nginx-hpa
+  namespace: hpa
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx-hpa
+  template:
+    metadata:
+      labels:
+        app: nginx-hpa
+    spec:
+      containers:
+      - name: nginx
+        image: shixiaochuangk8s/nginx:1.18
+        resources:
+          requests:
+            cpu: 200m
+            memory: 100Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-hpa
+  namespace: hpa
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+  selector:
+    app: nginx-hpa
