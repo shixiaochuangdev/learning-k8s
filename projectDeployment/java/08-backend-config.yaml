@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sky-server-config
+  namespace: javaproject
+data:
+  MYSQL_HOST: "db-0.mysql"
+  MYSQL_PORT: "3306"
+  MYSQL_DATABASE: "sky_take_out"
+  MYSQL_USERNAME: "sky_take_out"
+  REDIS_HOST: "redis-0.redis"
+  REDIS_PORT: "6379"
+  ALIOSS_ENDPOINT: "oss-cn-chengdu.aliyuncs.com"
+  ALIOSS_BUCKET_NAME: "shi-project-pictures"
+  WECHAT_APPID: "wx3dcc4307ee452ee5"

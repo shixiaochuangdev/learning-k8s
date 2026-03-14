@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sky-front
+  namespace: javaproject
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sky-front
+  template:
+    metadata:
+      labels:
+        app: sky-front
+    spec:
+      serviceAccountName: harbor-sa
+      containers:
+      - name: sky-front
+        image: harbor.shixiaochuang.org/project/sky-front:v1.0
+        ports:
+        - containerPort: 80
+        envFrom:
+        - configMapRef:
+            name: sky-front-config

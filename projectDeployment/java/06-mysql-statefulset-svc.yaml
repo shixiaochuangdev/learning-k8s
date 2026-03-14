@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: javaproject
+spec:
+  ports:
+  - port: 3306
+    name: mysql
+  clusterIP: None
+  selector:
+    app: mysql-public
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: db
+  namespace: javaproject
+spec:
+  selector:
+    matchLabels:
+      app: mysql-public
+  serviceName: "mysql"
+  template:
+    metadata:
+      labels:
+        app: mysql-public
+    spec:
+      serviceAccountName: harbor-sa
+      containers:
+      - name: mysql
+        image: harbor.shixiaochuang.org/project/mysql:8.0.33
+        ports:
+        - containerPort: 3306
+
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: MYSQL_ROOT_PASSWORD
+
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: MYSQL_PASSWORD
+
+        - name: MYSQL_USER
+          valueFrom:
+            configMapKeyRef:
+              name: mysql-config
+              key: MYSQL_USER
+
+        - name: MYSQL_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: mysql-config
+              key: MYSQL_DATABASE
+
+        volumeMounts:
+        - mountPath: "/var/lib/mysql"
+          name: mysql-data
+
+  volumeClaimTemplates:
+  - metadata:
+      name: mysql-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: "nfs-csi"
+      resources:
+        requests:
+          storage: 5Gi

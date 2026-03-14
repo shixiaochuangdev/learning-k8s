@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sky-server
+  namespace: javaproject
+spec:
+  replicas: 2
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+
+  selector:
+    matchLabels:
+      app: sky-server
+
+  template:
+    metadata:
+      labels:
+        app: sky-server
+
+    spec:
+
+      serviceAccountName: harbor-sa
+
+      imagePullSecrets:
+      - name: harbor-secret
+
+      containers:
+      - name: sky-server
+        image: harbor.shixiaochuang.org/project/sky-server:v1.0
+        imagePullPolicy: Always
+
+        ports:
+        - containerPort: 8080
+
+        env:
+        - name: TZ
+          value: Asia/Shanghai
+
+        envFrom:
+        - configMapRef:
+            name: sky-server-config
+        - secretRef:
+            name: sky-server-secrets
+
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+
+        livenessProbe:
+          httpGet:
+            path: /doc.html
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+
+        readinessProbe:
+          httpGet:
+            path: /doc.html
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sky-server
+  namespace: javaproject
+spec:
+  selector:
+    app: sky-server
+
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+
+  type: ClusterIP

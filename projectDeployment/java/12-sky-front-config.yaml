@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sky-front-config
+  namespace: javaproject
+data:
+  BACKEND_HOST: "sky-server"
+  BACKEND_PORT: "8080"
+  TZ: "Asia/Shanghai"
