@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jenkins-slave-config
+  namespace: jenkins-ns
+data:
+  # Maven 私服地址
+  MAVEN_REPO_URL: "http://nexus.nexus-ns.svc.cluster.local:8081/repository/maven-central/"
+  # SonarQube 配置
+  SONAR_HOST_URL: "http://sonarqube.sonar-ns.svc.cluster.local:9000"
+  SONAR_SOURCE_ENCODING: "UTF-8"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jenkins-slave-secret
+  namespace: jenkins-ns
+type: Opaque
+stringData:
+  SONAR_TOKEN: "sqa_f3bc5cb7d0172a27aad23eafe2f55dba24939f78"

@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nexus
+  namespace: nexus-ns
+spec:
+  selector:
+    app: nexus
+  ports:
+    - name: http
+      port: 8081
+      targetPort: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nexus
+  namespace: nexus-ns
+  annotations:
+    # Nexus 上传大文件必须
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+
+    # 超时时间（push 镜像 / 传大包很关键）
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+
+    # WebSocket（Nexus UI 用）
+    nginx.ingress.kubernetes.io/enable-websocket: "true"
+
+    # 避免请求被拆分
+    nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+spec:
+  ingressClassName: 'nginx'
+  rules:
+    - host: nexus.shixiaochuang.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nexus
+                port:
+                  number: 8081

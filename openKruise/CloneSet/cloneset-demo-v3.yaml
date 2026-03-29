@@ -1,0 +1,26 @@
+apiVersion: apps.kruise.io/v1alpha1
+kind: CloneSet
+metadata:
+  name: cs-demo
+  namespace: kruise-ns
+spec:
+  minReadySeconds: 60
+  scaleStrategy:
+    maxUnavailable: 1
+    podsToDelete:
+      - cs-demo-zjw7c
+  replicas: 4
+  selector:
+    matchLabels:
+      app: cs
+  template:
+    metadata:
+      labels:
+        app: cs
+    spec:
+      containers:
+        - name: nginx
+          image: shixiaochuangk8s/nginx:1.14-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80

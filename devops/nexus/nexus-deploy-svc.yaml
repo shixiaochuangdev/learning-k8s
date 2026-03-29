@@ -1,0 +1,97 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nexus-headless
+  namespace: nexus-ns
+  labels:
+    app: nexus
+spec:
+  clusterIP: None
+  selector:
+    app: nexus
+  ports:
+    - name: http
+      port: 8081
+      targetPort: 8081
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nexus
+  namespace: nexus-ns
+  labels:
+    app: nexus
+spec:
+  serviceName: nexus-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nexus
+  template:
+    metadata:
+      labels:
+        app: nexus
+    spec:
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        runAsUser: 200
+        runAsGroup: 200
+        fsGroup: 200
+      containers:
+        - name: nexus
+          image: shixiaochuangk8s/nexus3:3.86.2
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: NEXUS_JVM_OPTS
+              value: >
+                -Xms4g
+                -Xmx4g
+                -XX:MaxDirectMemorySize=2g
+                -XX:+UseG1GC
+                -Djava.net.preferIPv4Stack=true
+
+          ports:
+            - name: http
+              containerPort: 8081
+
+          resources:
+            requests:
+              cpu: "1"
+              memory: "4Gi"
+            limits:
+              cpu: "2"
+              memory: "8Gi"
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8081
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8081
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          volumeMounts:
+            - name: nexus-data
+              mountPath: /opt/sonatype/sonatype-work
+
+  volumeClaimTemplates:
+    - metadata:
+        name: nexus-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: nfs-csi
+        resources:
+          requests:
+            storage: 50Gi
