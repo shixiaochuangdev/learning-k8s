@@ -1,0 +1,50 @@
+apiVersion: mongodbcommunity.mongodb.com/v1
+kind: MongoDBCommunity
+metadata:
+  name: mongo-cluster
+  namespace: mongodb
+spec:
+  members: 2
+  type: ReplicaSet
+  version: "8.0.16"
+
+  statefulSet:
+    spec:
+      volumeClaimTemplates:
+        - metadata:
+            name: data-volume
+          spec:
+            accessModes: [ "ReadWriteOnce" ]
+            storageClassName: csi-rbd-sc
+            resources:
+              requests:
+                storage: 10Gi
+        - metadata:
+            name: logs-volume
+          spec:
+            accessModes: [ "ReadWriteOnce" ]
+            storageClassName: csi-rbd-sc
+            resources:
+              requests:
+                storage: 2Gi
+
+  # 安全认证
+  security:
+    authentication:
+      modes: [ "SCRAM" ]
+
+  # 用户配置
+  users:
+    - name: admin
+      db: admin
+      passwordSecretRef:
+        name: mongo-password    # 需提前创建
+        key: password
+      scramCredentialsSecretName: my-mongo-scram
+      roles:
+        - name: root
+          db: admin
+
+  #  MongoDB 额外配置
+  additionalMongodConfig:
+    storage.wiredTiger.engineConfig.journalCompressor: zlib
