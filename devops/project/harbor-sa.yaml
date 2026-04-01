@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: harbor-secret
+  namespace: project-ns
+type: kubernetes.io/dockerconfigjson
+data:
+  .dockerconfigjson: ewogICJhdXRocyI6IHsKICAgICJoYXJib3Iuc2hpeGlhb2NodWFuZy5vcmciOiB7CiAgICAgICJ1c2VybmFtZSI6ICJhZG1pbiIsCiAgICAgICJwYXNzd29yZCI6ICJzaGl4aWFvY2h1YW5nLm9yZyIsCiAgICAgICJhdXRoIjogIllXUnRhVzQ2YzJocGVHbGhiMk5vZFdGdVp5NXZjbWM9IgogICAgfQogIH0KfQo=
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: harbor-sa
+  namespace: project-ns
+imagePullSecrets:
+  - name: harbor-secret

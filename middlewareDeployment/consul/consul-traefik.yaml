@@ -1,0 +1,14 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: consul
+  namespace: consul-ns
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`consul.shixiaochuang.net`)
+      kind: Rule
+      services:
+        - name: consul-ui
+          port: 8500

@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dkd-server
+  namespace: project-ns
+spec:
+  replicas: 3
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+
+  selector:
+    matchLabels:
+      app: dkd-server
+
+  template:
+    metadata:
+      labels:
+        app: dkd-server
+    spec:
+      serviceAccountName: harbor-sa
+      imagePullSecrets:
+      - name: harbor-secret
+
+      containers:
+      - name: dkd-server
+        image: harbor.shixiaochuang.org/dkd-admin/backend:53
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+
+        env:
+        - name: TZ
+          value: Asia/Shanghai
+
+        envFrom:
+        - configMapRef:
+            name: backend-config
+        - secretRef:
+            name: backend-secret
+
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dkd-server
+  namespace: project-ns
+spec:
+  selector:
+    app: dkd-server
+
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+
+  type: ClusterIP

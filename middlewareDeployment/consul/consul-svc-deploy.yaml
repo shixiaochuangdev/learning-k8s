@@ -1,0 +1,122 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: consul
+  namespace: consul-ns
+spec:
+  clusterIP: None
+  selector:
+    app: consul
+  ports:
+    - name: http
+      port: 8500
+      targetPort: 8500
+    - name: serflan
+      port: 8301
+      targetPort: 8301
+    - name: serfwan
+      port: 8302
+      targetPort: 8302
+    - name: server
+      port: 8300
+      targetPort: 8300
+    - name: dns
+      port: 8600
+      targetPort: 8600
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: consul
+  namespace: consul-ns
+spec:
+  serviceName: consul
+  replicas: 3
+  selector:
+    matchLabels:
+      app: consul
+  template:
+    metadata:
+      labels:
+        app: consul
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: consul
+          image: consul:1.15.4
+          args:
+            - "agent"
+            - "-server"
+            - "-bootstrap-expect=3"
+            - "-ui"
+            - "-data-dir=/consul/data"
+            - "-bind=0.0.0.0"
+            - "-client=0.0.0.0"
+            - "-advertise=$(PODIP)"
+            - "-retry-join=consul.consul-ns.svc.cluster.local"
+            - "-domain=cluster.local"
+            - "-disable-host-node-id"
+
+          volumeMounts:
+            - name: data
+              mountPath: /consul/data
+
+          env:
+            - name: PODIP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /v1/status/leader
+              port: 8500
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /v1/status/leader
+              port: 8500
+            initialDelaySeconds: 30
+            periodSeconds: 10
+
+          ports:
+            - containerPort: 8500
+              name: ui-port
+            - containerPort: 8400
+              name: alt-port
+            - containerPort: 53
+              name: dns-udp
+              protocol: UDP
+            - containerPort: 8443
+              name: https-port
+            - containerPort: 8080
+              name: http-port
+            - containerPort: 8301
+              name: serflan
+            - containerPort: 8302
+              name: serfwan
+            - containerPort: 8600
+              name: consuldns
+            - containerPort: 8300
+              name: server
+
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: csi-rbd-sc
+        resources:
+          requests:
+            storage: 10Gi
