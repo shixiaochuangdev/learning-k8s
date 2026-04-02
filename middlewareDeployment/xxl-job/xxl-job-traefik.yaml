@@ -1,0 +1,14 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: xxl-job-admin
+  namespace: xxl-job-ns
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`xxl-job.shixiaochuang.net`) && PathPrefix(`/xxl-job-admin`)
+      kind: Rule
+      services:
+        - name: xxl-job-admin-svc
+          port: 8800

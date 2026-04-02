@@ -1,0 +1,31 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: traefik-gateway
+  namespace: xxl-job-ns
+spec:
+  gatewayClassName: traefik
+  listeners:
+    - name: web
+      protocol: HTTP
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: xxl-job-admin
+  namespace: xxl-job-ns
+spec:
+  parentRefs:
+    - name: traefik-gateway
+      namespace: xxl-job-ns
+  hostnames:
+    - xxl-job.shixiaochuang.io
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /xxl-job-admin
+      backendRefs:
+        - name: xxl-job-admin-svc
+          port: 8800

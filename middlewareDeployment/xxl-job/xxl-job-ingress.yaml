@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: xxl-job-admin-ingress
+  namespace: xxl-job-ns
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: xxl-job.shixiaochuang.org
+      http:
+        paths:
+          - path: /xxl-job-admin
+            pathType: Prefix
+            backend:
+              service:
+                name: xxl-job-admin-svc
+                port:
+                  number: 8800
