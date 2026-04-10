@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nacos-config
+  namespace: nacos-ns
+data:
+  application.properties: |
+    ############################
+    # Server Configuration
+    ############################
+    server.servlet.contextPath=/nacos
+    server.port=8848
+    server.error.include-message=ALWAYS
+    ############################
+    # Database Configuration
+    ############################
+    spring.datasource.platform=${SPRING_DATASOURCE_PLATFORM}
+    db.num=1
+    db.url.0=jdbc:mysql://${MYSQL_SERVICE_HOST}:${MYSQL_SERVICE_PORT}/${MYSQL_SERVICE_DB_NAME}?${MYSQL_SERVICE_DB_PARAM}
+    db.user.0=${MYSQL_SERVICE_USER}
+    db.password.0=${MYSQL_SERVICE_PASSWORD}
+    ############################
+    # Connection Pool
+    ############################
+    db.pool.config.connectionTimeout=30000
+    db.pool.config.validationTimeout=10000
+    db.pool.config.maximumPoolSize=20
+    db.pool.config.minimumIdle=2
+    ############################
+    # Security Ignore URLs
+    ############################
+    nacos.security.ignore.urls=/,/error,/**/*.css,/**/*.js,/**/*.html,/**/*.map,/**/*.svg,/**/*.png,/**/*.ico,/console-ui/public/**,/v1/auth/**,/v1/console/health/**,/actuator/**,/v1/console/server/**
+    ############################
+    # Auth Configuration
+    ############################
+    nacos.core.auth.system.type=nacos
+    nacos.core.auth.enabled=${NACOS_AUTH_ENABLED}
+    nacos.core.auth.plugin.nacos.token.cache.enable=false
+    nacos.core.auth.plugin.nacos.token.expire.seconds=18000
+    nacos.core.auth.plugin.nacos.token.secret.key=${NACOS_TOKEN_SECRET_KEY}
+    nacos.core.auth.caching.enabled=true
+    nacos.core.auth.enable.userAgentAuthWhite=false
+    nacos.core.auth.server.identity.key=${NACOS_AUTH_IDENTITY_KEY}
+    nacos.core.auth.server.identity.value=${NACOS_AUTH_IDENTITY_VALUE}
+    ############################
+    # Monitoring
+    ############################
+    management.endpoints.web.exposure.include=prometheus
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: nacos-auth-secret
+  namespace: nacos-ns
+type: Opaque
+stringData:
+  NACOS_TOKEN_SECRET_KEY: "dGhpc19pc19hX3ZlcnlfbG9uZ19yYW5kb21fc3RyaW5nX2Zvcl9uYWNvc19hdXRoXzEyMzQ1Ng=="
+  NACOS_AUTH_IDENTITY_KEY: "nacos"
+  NACOS_AUTH_IDENTITY_VALUE: "nacos_cluster"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nacos-env
+  namespace: nacos-ns
+data:
+  MODE: "cluster"
+  PREFER_HOST_MODE: "hostname"
+
+  NACOS_REPLICAS: "3"
+  SERVICE_NAME: "nacos-headless"
+  DOMAIN_NAME: "cluster.local"
+
+  SPRING_DATASOURCE_PLATFORM: "mysql"
+  MYSQL_SERVICE_HOST: "mysql-nacos-0.mysql-nacos.nacos-ns.svc.cluster.local"
+  MYSQL_SERVICE_PORT: "3306"
+  MYSQL_SERVICE_DB_NAME: "nacos"
+  MYSQL_SERVICE_USER: "nacos"
+  MYSQL_SERVICE_PASSWORD: "nacos"
+  MYSQL_SERVICE_DB_PARAM: "characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useUnicode=true&useSSL=false&serverTimezone=UTC"
+
+  NACOS_AUTH_ENABLED: "true"

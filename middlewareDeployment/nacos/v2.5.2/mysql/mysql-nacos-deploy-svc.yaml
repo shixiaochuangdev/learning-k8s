@@ -1,0 +1,100 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-nacos
+  namespace: nacos-ns
+spec:
+  clusterIP: None
+  selector:
+    app: mysql-nacos
+  ports:
+  - port: 3306
+    name: mysql
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql-nacos
+  namespace: nacos-ns
+spec:
+  serviceName: mysql-nacos
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql-nacos
+  template:
+    metadata:
+      labels:
+        app: mysql-nacos
+    spec:
+      containers:
+      - name: mysql-nacos
+        image: shixiaochuangk8s/mysql:8.0.33
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3306
+          name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-nacos-secret
+              key: ROOT_PASSWORD
+        - name: MYSQL_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: mysql-nacos-secret
+              key: MYSQL_DATABASE
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: mysql-nacos-secret
+              key: MYSQL_USER
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-nacos-secret
+              key: MYSQL_PASSWORD
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/mysql
+
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1"
+          limits:
+            memory: "4Gi"
+            cpu: "2"
+
+        # Liveness 探针，用于检查 MySQL 是否存活
+        livenessProbe:
+          exec:
+            command:
+              - "sh"
+              - "-c"
+              - "mysqladmin ping -u root -p${MYSQL_ROOT_PASSWORD}"  # 使用 sh 执行 mysqladmin 命令
+          initialDelaySeconds: 30  # 容器启动后 30 秒开始进行检查
+          periodSeconds: 10  # 每 10 秒执行一次探针
+          timeoutSeconds: 5  # 如果 5 秒内没有响应则视为失败
+
+        # Readiness 探针，用于检查 MySQL 是否准备好接收请求
+        readinessProbe:
+          exec:
+            command:
+              - "sh"
+              - "-c"
+              - "mysql -u root -p${MYSQL_ROOT_PASSWORD} -e 'SELECT 1'"  # 使用 sh 执行 mysql 查询
+          initialDelaySeconds: 60  # 容器启动后 60 秒开始进行检查
+          periodSeconds: 2  # 每 2 秒执行一次探针
+          timeoutSeconds: 1  # 如果 1 秒内没有响应则视为失败
+
+  volumeClaimTemplates:
+  - metadata:
+      name: data  # 持久化数据的卷名称
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "csi-rbd-sc"
+      resources:
+        requests:
+          storage: 5Gi

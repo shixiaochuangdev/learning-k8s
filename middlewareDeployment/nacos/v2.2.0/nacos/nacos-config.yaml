@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nacos-config
+  namespace: nacos-ns
+data:
+  application.properties: |
+    server.servlet.contextPath=/nacos
+    server.error.include-message=ALWAYS
+    server.port=8848
+
+    spring.datasource.platform=${SPRING_DATASOURCE_PLATFORM}
+    db.num=1
+    db.url.0=jdbc:mysql://${MYSQL_SERVICE_HOST}:${MYSQL_SERVICE_PORT}/${MYSQL_SERVICE_DB_NAME}?${MYSQL_SERVICE_DB_PARAM}
+    db.user.0=${MYSQL_SERVICE_USER}
+    db.password.0=${MYSQL_SERVICE_PASSWORD}
+
+    db.pool.config.connectionTimeout=30000
+    db.pool.config.validationTimeout=10000
+    db.pool.config.maximumPoolSize=20
+    db.pool.config.minimumIdle=2
+
+    nacos.naming.empty-service.auto-clean=true
+    nacos.naming.empty-service.clean.initial-delay-ms=50000
+    nacos.naming.empty-service.clean.period-time-ms=30000
+
+    management.metrics.export.elastic.enabled=false
+    management.metrics.export.influx.enabled=false
+
+    server.tomcat.accesslog.enabled=true
+    server.tomcat.accesslog.pattern=%h %l %u %t "%r" %s %b %D %{User-Agent}i %{Request-Source}i
+    server.tomcat.basedir=file:.
+
+    nacos.security.ignore.urls=/,/error,/**/*.css,/**/*.js,/**/*.html,/**/*.map,/**/*.svg,/**/*.png,/**/*.ico,/console-ui/public/**,/v1/auth/**,/v1/console/health/**,/actuator/**,/v1/console/server/**
+
+    nacos.core.auth.system.type=nacos
+    nacos.core.auth.enabled=false
+    nacos.core.auth.default.token.expire.seconds=18000
+    nacos.core.auth.default.token.secret.key=SecretKey012345678901234567890123456789012345678901234567890123456789
+    nacos.core.auth.caching.enabled=true
+    nacos.core.auth.enable.userAgentAuthWhite=false
+    nacos.core.auth.server.identity.key=serverIdentity
+    nacos.core.auth.server.identity.value=security
+
+    nacos.istio.mcp.server.enabled=false
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nacos-env
+  namespace: nacos-ns
+data:
+  MODE: "cluster"
+  PREFER_HOST_MODE: "hostname"
+
+  NACOS_REPLICAS: "3"
+  SERVICE_NAME: "nacos-headless"
+  DOMAIN_NAME: "cluster.local"
+
+
+  SPRING_DATASOURCE_PLATFORM: "mysql"
+  MYSQL_SERVICE_HOST: "db-0.mysql.nacos-ns.svc.cluster.local"
+  MYSQL_SERVICE_PORT: "3306"
+  MYSQL_SERVICE_DB_NAME: "nacos"
+  MYSQL_SERVICE_USER: "nacos"
+  MYSQL_SERVICE_PASSWORD: "nacos"
+  MYSQL_SERVICE_DB_PARAM: "characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useUnicode=true&useSSL=false&serverTimezone=UTC"
