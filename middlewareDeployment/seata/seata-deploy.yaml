@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: seata-server
+  namespace: seata-ns
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: seata-server
+  template:
+    metadata:
+      labels:
+        app: seata-server
+    spec:
+      containers:
+        - name: seata-server
+          image: shixiaochuangk8s/seata-server:1.5.1
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: service
+              containerPort: 8091
+            - name: console
+              containerPort: 7091
+
+          env:
+            - name: SEATA_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+
+          volumeMounts:
+            - name: seata-config
+              mountPath: /seata-server/resources/application.yml
+              subPath: application.yml
+
+      volumes:
+        - name: seata-config
+          configMap:
+            name: seata-server-config

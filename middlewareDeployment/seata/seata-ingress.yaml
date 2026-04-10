@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: seata-server
+  namespace: seata-ns
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: seata.shixiaochuang.org
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: seata-server
+            port:
+              number: 7091

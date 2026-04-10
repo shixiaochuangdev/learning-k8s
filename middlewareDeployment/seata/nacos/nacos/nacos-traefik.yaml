@@ -1,0 +1,14 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: nacos
+  namespace: nacos-ns
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`nacos.shixiaochuang.net`)
+      kind: Rule
+      services:
+        - name: nacos
+          port: 8848
