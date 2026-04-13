@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: normal-ingress
+  namespace: ingress-header
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: header.shixiaochuang.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nginx-v1-svc
+                port:
+                  number: 80

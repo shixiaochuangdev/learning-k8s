@@ -1,0 +1,30 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+
+metadata:
+  name: gray-ingress
+  namespace: ingress-header
+
+  annotations:
+    # 声明这是一个灰度（Canary）Ingress
+    nginx.ingress.kubernetes.io/canary: "true"
+
+    # 指定通过 HTTP Header 进行灰度流量分流
+    # 只有携带指定 Header 的请求才会进入灰度版本
+    nginx.ingress.kubernetes.io/canary-by-header: "Region"
+    nginx.ingress.kubernetes.io/canary-by-header-pattern: "xian"
+
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: header.shixiaochuang.org
+      http:
+        paths:
+          # 路径匹配规则
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nginx-v2-svc
+                port:
+                  number: 80

@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+
+metadata:
+  name: gray-ingress
+  namespace: ingress-weight
+
+  annotations:
+    # 声明这是一个灰度（Canary）Ingress
+    nginx.ingress.kubernetes.io/canary: "true"
+    nginx.ingress.kubernetes.io/canary-weight: "50"
+
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: weight.shixiaochuang.org
+      http:
+        paths:
+          # 路径匹配规则
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nginx-v2-svc
+                port:
+                  number: 80

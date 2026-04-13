@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: httpd
+  name: httpd
+  namespace: rollouts
+  annotations:
+    kubernetes.io/change-cause: "Deploy httpd version 2.2"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: httpd
+  template:
+    metadata:
+      labels:
+        app: httpd
+    spec:
+      containers:
+        - image: shixiaochuangk8s/httpd:2.2
+          name: httpd
+          ports:
+            - containerPort: 80
