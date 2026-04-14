@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: rollouts-demo
+  namespace: rollouts-ns
+spec:
+  # 定义期望运行的副本数量为 5 个，即创建 5 个 Pod 实例
+  replicas: 5
+  # 配置发布策略，这里使用灰度发布（Canary）策略
+  strategy:
+    # 指定使用 canary 灰度发布模式
+    canary:
+      # 定义灰度发布的具体执行步骤列表
+      steps:
+        # 第一步：将新版本（canary）的流量权重设置为 20%
+      - setWeight: 20
+        # 暂停发布流程，等待人工确认或自动检查，确保 20% 流量稳定
+      - pause: {}
+        # 第二步：将新版本流量权重提升到 40%
+      - setWeight: 40
+        # 暂停 10 秒后自动继续下一步
+      - pause: {duration: 10}
+        # 第三步：将新版本流量权重提升到 60%
+      - setWeight: 60
+        # 暂停 10 秒后自动继续下一步
+      - pause: {duration: 10}
+        # 第四步：将新版本流量权重提升到 80%
+      - setWeight: 80
+        # 暂停 10 秒后自动继续下一步（后续会自动完成 100% 切换）
+      - pause: {duration: 10}
+  # 设置保留的历史修订版本数量为 2，用于回滚和审计
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: rollouts-demo
+  template:
+    metadata:
+      labels:
+        app: rollouts-demo
+    spec:
+      containers:
+      - name: rollouts-demo
+        image: argoproj/rollouts-demo:blue
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        resources:
+          requests:
+            memory: 32Mi
+            cpu: 5m

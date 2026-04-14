@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rollouts-demo-stable
+  namespace: rollouts-ns
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: argorollouts.shixiaochuang.org
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            # Reference to a Service name, also specified in the Rollout spec.strategy.canary.stableService field
+             # 引用服务名称，也在 Rollout spec.strategy.canary.stableService 字段中指定
+            name: rollouts-demo-stable
+            port:
+              number: 80
