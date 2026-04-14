@@ -1,0 +1,35 @@
+# cat services.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: rollouts-demo-canary
+  namespace: rollouts-ns
+spec:
+  ports:
+  - port: 80
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app: rollouts-demo
+    # This selector will be updated with the pod-template-hash of the canary ReplicaSet. e.g.:
+    # rollouts-pod-template-hash: 7bf84f9696
+    # 该 selector 将使用金丝雀 ReplicaSet 的 pod-template-hash 进行更新，例如： rollouts-pod-template-hash: 7bf84f9696
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rollouts-demo-stable
+  namespace: rollouts-ns
+spec:
+  ports:
+  - port: 80
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app: rollouts-demo
+    # This selector will be updated with the pod-template-hash of the stable ReplicaSet. e.g.:
+    # rollouts-pod-template-hash: 789746c88d
+    # 该 selector 将使用稳定版的 ReplicaSet 的 pod-template-hash 进行更新，比如 rollouts-pod-template-hash: 789746c88d

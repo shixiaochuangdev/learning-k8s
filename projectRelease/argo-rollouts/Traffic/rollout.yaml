@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: rollouts-demo
+  namespace: rollouts-ns
+spec:
+  # 定义期望运行的副本数量为 1 个，即创建 1 个 Pod 实例
+  replicas: 1
+  # 配置发布策略，这里使用灰度发布（Canary）策略
+  strategy:
+    # 指定使用 canary 灰度发布模式
+    canary:
+      # 指定灰度版本（canary）对应的 Kubernetes Service 名称，用于接收新版本流量
+      canaryService: rollouts-demo-canary
+      # 指定稳定版本（stable）对应的 Kubernetes Service 名称，用于接收生产流量
+      stableService: rollouts-demo-stable
+      # 配置流量路由规则，实现精细化的流量切分
+      trafficRouting:
+        # 使用 NGINX Ingress Controller 作为流量路由插件
+        nginx:
+          # 指定 NGINX Ingress 资源名称，Argo Rollouts 会修改该 Ingress 的 backend 来实现流量权重分配
+          stableIngress: rollouts-demo-stable
+      # 定义灰度发布的具体执行步骤列表，按顺序执行
+      steps:
+        # 第一步：将新版本（canary）的流量权重设置为 50%，即 50% 流量指向新版本，50% 指向稳定版本
+        # 注：原配置为 5%，为方便测试效果已调整为 50%
+      - setWeight: 50
+        # 暂停发布流程，等待人工确认或自动化分析通过后才继续执行下一步
+        # pause: {} 表示无限期暂停，需手动执行 `kubectl argo rollouts promote` 命令继续
+      - pause: {}
+  # 设置保留的历史修订版本数量为 2，用于版本回滚和审计，超出部分会自动清理
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: rollouts-demo
+  template:
+    metadata:
+      labels:
+        app: rollouts-demo
+    spec:
+      containers:
+      - name: rollouts-demo
+        image: argoproj/rollouts-demo:blue
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        resources:
+          requests:
+            memory: 32Mi
+            cpu: 5m
