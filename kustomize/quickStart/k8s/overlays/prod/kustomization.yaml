@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- ../../base
+patches:
+- path: custom-env.yaml
+  target:
+    kind: Deployment
+    name: sl-demo-app
+- path: replica-and-rollout-strategy.yaml
+  target:
+    kind: Deployment
+    name: sl-demo-app
+- path: database-secret.yaml
+  target:
+    kind: Deployment
+    name: sl-demo-app
+secretGenerator:
+- literals:
+  - db-password=12345
+  name: sl-demo-app
+  type: Opaque
+  namespace: kustomize-ns

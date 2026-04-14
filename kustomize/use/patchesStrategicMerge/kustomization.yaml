@@ -1,0 +1,13 @@
+namespace: test
+resources:
+  - deployment.yaml
+patches:
+  - path: increase_replicas.yaml
+    target:
+      kind: Deployment
+      name: my-nginx
+
+  - path: set_memory.yaml
+    target:
+      kind: Deployment
+      name: my-nginx

@@ -1,0 +1,7 @@
+namespace: kustomize-ns
+namePrefix: dev-
+labels:
+  - pairs:
+      app: my-nginx
+resources:
+  - deployment.yaml
