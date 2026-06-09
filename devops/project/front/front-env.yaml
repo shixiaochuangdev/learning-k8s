@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+  namespace: exam-system
+data:
+  BACKEND_HOST: "exam-system"
+  BACKEND_PORT: "8080"

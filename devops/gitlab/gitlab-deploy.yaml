@@ -40,7 +40,7 @@ spec:
             - name: TZ
               value: Asia/Shanghai
             - name: GITLAB_TIMEZONE
-              value: Beijing
+              value: Asia/Shanghai
             - name: GITLAB_SECRETS_DB_KEY_BASE
               value: long-and-random-alpha-numeric-string
             - name: GITLAB_SECRETS_SECRET_KEY_BASE
@@ -54,7 +54,7 @@ spec:
             - name: GITLAB_ROOT_EMAIL
               value: root@shixiaochuang.org
             - name: GITLAB_HOST
-              value: gitlab.gitlab-ns.svc.cluster.local
+              value: gitlab.shixiaochuang.org
             - name: GITLAB_PORT
               value: "80"
             - name: GITLAB_SSH_PORT
@@ -152,15 +152,15 @@ spec:
     - metadata:
         name: gitlab-data
       spec:
-        storageClassName: "nfs-csi"
+        storageClassName: "rook-ceph-block"
         accessModes: [ "ReadWriteOnce" ]
         resources:
           requests:
-            storage: 50Gi
+            storage: 200Gi
     - metadata:
         name: gitlab-config
       spec:
-        storageClassName: "nfs-csi"
+        storageClassName: "rook-ceph-block"
         accessModes: [ "ReadWriteOnce" ]
         resources:
           requests:
@@ -168,7 +168,7 @@ spec:
     - metadata:
         name: gitlab-logs
       spec:
-        storageClassName: "nfs-csi"
+        storageClassName: "rook-ceph-block"
         accessModes: [ "ReadWriteOnce" ]
         resources:
           requests:

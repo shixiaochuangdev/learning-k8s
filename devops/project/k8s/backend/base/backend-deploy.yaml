@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exam-system-backend
+  namespace: exam-system
+spec:
+  replicas: 3
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+
+  selector:
+    matchLabels:
+      app: exam-system
+
+  template:
+    metadata:
+      labels:
+        app: exam-system
+    spec:
+      serviceAccountName: harbor-sa
+      containers:
+      - name: exam-system
+        image: harbor.shixiaochuang.org/exam-system/exam-system-server:v1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+
+        env:
+        - name: TZ
+          value: Asia/Shanghai
+
+        envFrom:
+        - configMapRef:
+            name: backend-config
+        - secretRef:
+            name: backend-secret
+
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi

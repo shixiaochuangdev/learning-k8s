@@ -63,7 +63,7 @@ spec:
     - metadata:
         name: postgresql-data
       spec:
-        storageClassName: "nfs-csi"
+        storageClassName: "rook-ceph-block"
         accessModes: [ "ReadWriteOnce" ]
         resources:
           requests:

@@ -19,7 +19,6 @@ spec:
   clusterIP: None
   selector:
     app: redis-public
-
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -42,7 +41,7 @@ spec:
 
       containers:
         - name: redis
-          image: harbor.shixiaochuang.org/project/redis:7.4.2
+          image: harbor.shixiaochuang.org/env/redis:7.4.2
           command: ["sh", "-c"]
           args:
             - redis-server --appendonly yes --requirepass $REDIS_PASSWORD
@@ -90,8 +89,8 @@ spec:
         name: redis-data
       spec:
         accessModes:
-          - ReadWriteMany
-        storageClassName: nfs-csi
+          - ReadWriteOnce
+        storageClassName: csi-rbd-sc
         resources:
           requests:
-            storage: 2Gi
+            storage: 5Gi

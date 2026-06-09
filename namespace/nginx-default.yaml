@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-default
+  namespace: datarc-dev
+
+spec:
+  containers:
+  - name: nginx
+    image: shixiaochuangk8s/nginx:1.18

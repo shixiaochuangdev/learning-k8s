@@ -1,0 +1,4 @@
+apiVersion: v1							# api版本号
+kind: Namespace							# 类型为namespace
+metadata:								# 定义namespace的元数据属性
+  name: ns2					    		# 定义name属性为ns2

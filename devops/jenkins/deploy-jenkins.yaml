@@ -53,11 +53,11 @@ spec:
             protocol: TCP
           resources:
             limits:
-              cpu: 1
-              memory: 1Gi
+              cpu: "4"
+              memory: 8Gi
             requests:
-              cpu: 0.5
-              memory: 500Mi
+              cpu: "2"
+              memory: 4Gi
           env:
             - name: LIMITS_MEMORY
               valueFrom:
@@ -89,8 +89,8 @@ spec:
   - metadata:
       name: jenkins-home
     spec:
-      storageClassName: "nfs-csi"
-      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "rook-cephfs"
+      accessModes: [ "ReadWriteMany" ]
       resources:
         requests:
-          storage: 1Gi
+          storage: 20Gi

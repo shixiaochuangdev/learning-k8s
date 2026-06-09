@@ -8,10 +8,10 @@ expose:
   ingress:
     hosts:
       core: harbor.shixiaochuang.org
-    className: "nginx"
     annotations:
-      nginx.ingress.kubernetes.io/ssl-redirect: "true"
-      nginx.ingress.kubernetes.io/proxy-body-size: "0"
+      kubernetes.io/ingress.class: traefik
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+      traefik.ingress.kubernetes.io/router.tls: "true"
 
 externalURL: https://harbor.shixiaochuang.org
 
@@ -20,29 +20,34 @@ persistence:
   resourcePolicy: "keep"
   persistentVolumeClaim:
     registry:
-      storageClass: "nfs-csi"
-      accessMode: ReadWriteMany
-      size: 5Gi
+      storageClass: "rook-ceph-block"
+      accessMode: ReadWriteOnce
+      size: 200Gi
+
     chartmuseum:
-      storageClass: "nfs-csi"
-      accessMode: ReadWriteMany
-      size: 5Gi
+      storageClass: "rook-ceph-block"
+      accessMode: ReadWriteOnce
+      size: 10Gi
+
     jobservice:
       jobLog:
-        storageClass: "nfs-csi"
+        storageClass: "rook-ceph-block"
         accessMode: ReadWriteOnce
-        size: 1Gi
+        size: 5Gi
+
     database:
-      storageClass: "nfs-csi"
-      accessMode: ReadWriteMany
-      size: 2Gi
+      storageClass: "rook-ceph-block"
+      accessMode: ReadWriteOnce
+      size: 20Gi
+
     redis:
-      storageClass: "nfs-csi"
-      accessMode: ReadWriteMany
-      size: 2Gi
-    trivy:
-      storageClass: "nfs-csi"
-      accessMode: ReadWriteMany
+      storageClass: "rook-ceph-block"
+      accessMode: ReadWriteOnce
       size: 5Gi
+
+    trivy:
+      storageClass: "rook-ceph-block"
+      accessMode: ReadWriteOnce
+      size: 20Gi
 
 harborAdminPassword: "shixiaochuang.org"

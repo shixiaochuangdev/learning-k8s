@@ -8,11 +8,11 @@ spec:
 
   securityContext:
     runAsUser: 1000
-    fsGroup: 995
+    fsGroup: 990
 
   containers:
   - name: agent
-    image: harbor.shixiaochuang.org/jenkins/jenkins-slave-agent:jdk17-maven-sonar-docker
+    image: harbor.shixiaochuang.org/cicd/jenkins-inbound-agent:jdk17-maven-sonar-docker
     imagePullPolicy: Always
     tty: true
 

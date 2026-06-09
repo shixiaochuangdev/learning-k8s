@@ -91,8 +91,8 @@ spec:
     - metadata:
         name: sonarqube-storage
       spec:
-        accessModes: [ "ReadWriteMany" ]
-        storageClassName: nfs-csi
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: rook-ceph-block
         resources:
           requests:
             storage: 20Gi

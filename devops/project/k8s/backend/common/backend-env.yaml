@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: exam-system
+data:
+  SERVER_PORT: "8080"
+
+  # Redis（project-ns）
+  REDIS_HOST: "redis.project-ns.svc.cluster.local"
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+
+  # MySQL（project-ns）
+  MYSQL_HOST: "mysql.project-ns.svc.cluster.local"
+  MYSQL_PORT: "3306"
+  MYSQL_DB: "exam_system"
+  MYSQL_USERNAME: "exam_system"
+
+  # MinIO（minio-ns）
+  MINIO_ENDPOINT: "http://minioapi.shixiaochuang.org"
+  MINIO_BUCKET: "exam-system"
+  MINIO_USERNAME: "minio"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backend-secret
+  namespace: exam-system
+type: Opaque
+stringData:
+  REDIS_PASSWORD: "123321"
+  MYSQL_PASSWORD: "exam_system"
+  MINIO_PASSWORD: "minio123456"
+
+  KIMI_API_KEY: "sk-9dXOPAqIbz671yjg1WTBubM2xK6lidrsDxApx6O36FY4RAAK"

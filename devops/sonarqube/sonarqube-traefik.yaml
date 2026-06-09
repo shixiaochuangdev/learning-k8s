@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sonarqube-web
+  namespace: sonarqube-ns
+spec:
+  type: ClusterIP
+  selector:
+    app: sonarqube
+  ports:
+  - port: 9000
+    targetPort: 9000
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: sonarqube-ingressroute
+  namespace: sonarqube-ns
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`sonarqube.shixiaochuang.org`)
+      kind: Rule
+      services:
+        - name: sonarqube-web
+          port: 9000

@@ -57,12 +57,11 @@ spec:
   - metadata:
       name: redis-data
     spec:
-      storageClassName: "nfs-csi"
+      storageClassName: "rook-ceph-block"
       accessModes: ["ReadWriteOnce"]
       resources:
         requests:
-          storage: 1Gi
-
+          storage: 5Gi
 ---
 apiVersion: v1
 kind: Service

@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# 引用 base
+resources:
+   - ../../base
+   - ../../common
+
+# 覆盖镜像（关键：Jenkins 会改这里）
+images:
+  - name: harbor.shixiaochuang.org/exam-system/exam-system-server
+    newTag: v1
+
+# 打补丁
+patches:
+  - path: patch.yaml

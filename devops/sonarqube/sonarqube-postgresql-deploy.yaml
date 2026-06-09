@@ -18,6 +18,8 @@ spec:
         - name: postgresql
           image: shixiaochuangk8s/postgres:15.14
           env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
@@ -70,7 +72,7 @@ spec:
     - metadata:
         name: postgresql-data
       spec:
-        storageClassName: "nfs-csi"
+        storageClassName: "rook-ceph-block"
         accessModes: [ "ReadWriteOnce" ]
         resources:
           requests:

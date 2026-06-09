@@ -91,7 +91,7 @@ spec:
       spec:
         accessModes:
           - ReadWriteOnce
-        storageClassName: nfs-csi
+        storageClassName: rook-ceph-block
         resources:
           requests:
             storage: 50Gi

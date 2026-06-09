@@ -1,0 +1,25 @@
+# 创建 测试环境 namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: datarc-dev
+  labels:
+    name: datarc-dev
+
+---
+
+# 定义 ResourceQuota
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: quota-dev
+  namespace: datarc-dev
+spec:
+  hard:
+    requests.cpu: "2"             # 限制 CPU 资源为 2 核心
+    requests.memory: 2Gi          # 限制内存资源为 2 GiB
+    limits.cpu: "4"               # 限制 CPU 资源最大为 4 核心
+    limits.memory: 4Gi            # 限制内存资源最大为 4 GiB
+    requests.nvidia.com/gpu: 4    # 限制 NVIDIA GPU 资源为 4 个
+    pods: "6"                     # 限制 POD 6 个
+    services: "6"                 # 限制 Service 数量为 6 个

@@ -27,7 +27,7 @@ spec:
 
       containers:
       - name: dkd-server
-        image: harbor.shixiaochuang.org/dkd-admin/backend:53
+        image: harbor.shixiaochuang.org/dkd-admin/backend:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
