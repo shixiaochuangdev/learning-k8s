@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-with-sidecar
+  namespace: pod-ns
+spec:
+  volumes:
+    - name: shared-files
+      emptyDir: { }  # 临时共享存储，Pod 生命周期内有效
+
+  containers:
+    # 主容器：Nginx Web 服务器
+    - name: nginx
+      image: shixiaochuangk8s/nginx:1.17.1
+      ports:
+        - containerPort: 80
+      volumeMounts:
+        - name: shared-files
+          mountPath: /usr/share/nginx/html  # Nginx 默认网页目录
+
+    # Sidecar 容器：定期更新网页内容
+    - name: content-updater
+      image: shixiaochuangk8s/busybox:1.28.3
+      command: [ "/bin/sh", "-c" ]
+      args:
+        - |
+          i=0;
+          while true; do
+            echo "<h1>Updated at $(date)</h1><p>Page version: $i</p>" > /shared/index.html;
+            i=$((i+1));
+            sleep 10;
+          done
+      volumeMounts:
+        - name: shared-files
+          mountPath: /shared  # 挂载到 /shared 目录
