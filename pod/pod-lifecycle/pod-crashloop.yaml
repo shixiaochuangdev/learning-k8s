@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-crashloop
+  namespace: pod-scheduler
+spec:
+  restartPolicy: Always
+  containers:
+    - name: nginx
+      image: shixiaochuangk8s/nginx:1.17.1
+      command: ["/bin/sh", "-c", "echo 'container start'; exit 1"]
