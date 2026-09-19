@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-nfs
+spec:
+
+  # PV 对外声明的存储容量
+  capacity:
+    storage: 5Gi
+
+  # 卷模式，默认值就是 Filesystem
+  volumeMode: Filesystem
+
+  # 访问模式：允许多个节点同时进行读写
+  accessModes:
+    - ReadWriteMany
+
+  # PVC 删除以后，PV 中的数据保留
+  persistentVolumeReclaimPolicy: Retain
+
+  # 不使用 StorageClass，表示这是一个静态 PV
+  storageClassName: ""
+
+  # 真正的底层存储
+  nfs:
+    server: 192.168.200.136
+    path: /opt/data/nfs

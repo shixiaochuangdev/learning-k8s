@@ -1,0 +1,31 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-csi
+
+# 指定动态供给使用的 CSI Driver
+provisioner: nfs.csi.k8s.io
+
+parameters:
+
+  # NFS Server 地址
+  server: 192.168.200.136
+
+  # NFS 共享根目录
+  share: /opt/data/csi-nfs
+
+  # 动态 PV 使用的子目录名称
+  subDir: ${pvc.metadata.namespace}/${pvc.metadata.name}/${pv.metadata.name}
+
+# PVC 删除后自动回收动态创建的 PV
+reclaimPolicy: Delete
+
+# PVC 创建后立即创建并绑定 PV
+volumeBindingMode: Immediate
+
+# 允许扩容
+allowVolumeExpansion: true
+
+mountOptions:
+  - nfsvers=4.1
+  - hard

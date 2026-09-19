@@ -1,11 +1,16 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: pvc-hostpath
+  name: pvc-nfs-dynamic
   namespace: volume-ns
 spec:
+
+  # 指定 StorageClass
+  storageClassName: nfs-csi
+
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
+
   resources:
     requests:
-      storage: 3Gi
+      storage: 10Gi

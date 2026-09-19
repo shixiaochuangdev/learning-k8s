@@ -21,5 +21,5 @@ spec:
   volumes:
   - name: logs-volume
     nfs:
-      server: 192.168.200.135  #nfs服务器地址
+      server: 192.168.200.136  #nfs服务器地址
       path: /opt/data/nfs #共享文件路径

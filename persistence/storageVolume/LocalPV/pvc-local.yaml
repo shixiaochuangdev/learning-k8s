@@ -1,11 +1,15 @@
-kind: PersistentVolumeClaim
 apiVersion: v1
+kind: PersistentVolumeClaim
 metadata:
   name: pvc-local
   namespace: volume-ns
 spec:
+
+  storageClassName: ""
+
   accessModes:
     - ReadWriteOnce
+
   resources:
     requests:
       storage: 5Gi

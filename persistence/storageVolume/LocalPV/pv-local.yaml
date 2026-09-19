@@ -3,14 +3,29 @@ kind: PersistentVolume
 metadata:
   name: pv-local
 spec:
+
+  # PV 容量
   capacity:
     storage: 5Gi
+
+  # 以文件系统方式使用
   volumeMode: Filesystem
+
+  # 本地磁盘通常使用 RWO
   accessModes:
     - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Delete
+
+  # 为了实验和数据安全使用 Retain
+  persistentVolumeReclaimPolicy: Retain
+
+  # 暂时不使用 StorageClass
+  storageClassName: ""
+
+  # Local PV 对应的本地路径
   local:
-    path: /data/k8s/localpv # work02节点上的目录
+    path: /data/k8s/localpv
+
+  # 指明这块存储位于哪个 Node
   nodeAffinity:
     required:
       nodeSelectorTerms:
