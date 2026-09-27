@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tls-nginx-ingress
+  namespace: ingress-ns
+spec:
+  ingressClassName: nginx
+
+  tls:
+    - hosts:
+        - tls.shixiaochuang.org
+      secretName: nginx-tls-secret
+
+  rules:
+    - host: tls.shixiaochuang.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: my-nginx
+                port:
+                  number: 80

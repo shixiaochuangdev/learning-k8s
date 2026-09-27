@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: default-ingress
+  namespace: ingress-ns
+spec:
+  ingressClassName: nginx
+
+  defaultBackend:
+    service:
+      name: php-apache
+      port:
+        number: 80
+
+  rules:
+    - host: default.shixiaochuang.org
+      http:
+        paths:
+          - path: /abc
+            pathType: Prefix
+            backend:
+              service:
+                name: default-nginx
+                port:
+                  number: 80

@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-replica-config
+  namespace: mysql-cluster
+data:
+  my.cnf: |
+    [mysqld]
+
+    #################################
+    # 基础配置
+    #################################
+
+    port=3306
+    bind-address=0.0.0.0
+
+    character-set-server=utf8mb4
+    collation-server=utf8mb4_0900_ai_ci
+
+
+    #################################
+    # 节点身份
+    #################################
+
+    # Replica 唯一 server_id
+    server_id=101
+
+
+    #################################
+    # Binary Log
+    #################################
+
+    log_bin=mysql-bin
+
+    binlog_format=ROW
+    binlog_row_image=FULL
+
+    sync_binlog=1
+
+    binlog_expire_logs_seconds=604800
+
+
+    #################################
+    # GTID
+    #################################
+
+    gtid_mode=ON
+    enforce_gtid_consistency=ON
+
+
+    #################################
+    # Replica 配置
+    #################################
+
+    log_replica_updates=ON
+
+    # Relay Log
+    relay_log=relay-bin
+
+    # 异常退出后自动恢复 Relay Log
+    relay_log_recovery=ON
+
+
+    #################################
+    # InnoDB
+    #################################
+
+    innodb_flush_log_at_trx_commit=1
+
+
+    [client]
+
+    default-character-set=utf8mb4

@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-primary-headless
+  namespace: mysql-cluster
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+
+  selector:
+    app: mysql
+    role: primary
+
+  ports:
+    - name: mysql
+      port: 3306
+      targetPort: 3306
+      protocol: TCP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-replica-headless
+  namespace: mysql-cluster
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+
+  selector:
+    app: mysql
+    role: replica
+
+  ports:
+    - name: mysql
+      port: 3306
+      targetPort: 3306
+      protocol: TCP
