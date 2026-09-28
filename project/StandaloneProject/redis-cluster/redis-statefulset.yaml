@@ -1,0 +1,161 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-cluster
+  namespace: redis-cluster
+
+spec:
+  # 必须与 Headless Service 名称一致
+  serviceName: redis-headless
+
+  # Redis Cluster：6 个节点
+  replicas: 6
+
+  # 6 个 Pod 可以并行创建
+  podManagementPolicy: Parallel
+
+  selector:
+    matchLabels:
+      app: redis-cluster
+
+  template:
+    metadata:
+      labels:
+        app: redis-cluster
+
+    spec:
+      # Redis 正常退出时间
+      terminationGracePeriodSeconds: 30
+
+      containers:
+        - name: redis
+
+          # 指定 Redis 版本
+          image: redis:7.4.2
+
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            # Redis 客户端端口
+            - name: redis
+              containerPort: 6379
+              protocol: TCP
+
+            # Redis Cluster Bus
+            - name: cluster-bus
+              containerPort: 16379
+              protocol: TCP
+
+          # Redis 密码来自 Secret
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: REDIS_PASSWORD
+
+            # 获取当前 Pod 名称
+            # 例如 redis-cluster-0
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+
+            # 获取 Namespace
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+
+          # 使用 ConfigMap 中的 redis.conf 启动 Redis
+          #
+          # 密码不写入 ConfigMap，
+          # 而是通过 Secret 环境变量动态传入。
+          command:
+            - /bin/sh
+            - -c
+
+          args:
+            - |
+              exec redis-server /etc/redis/redis.conf \
+                --requirepass "${REDIS_PASSWORD}" \
+                --masterauth "${REDIS_PASSWORD}" \
+                --cluster-announce-hostname "${POD_NAME}.redis-headless.${POD_NAMESPACE}.svc.cluster.local" \
+                --cluster-preferred-endpoint-type hostname \
+                --cluster-announce-port 6379 \
+                --cluster-announce-bus-port 16379
+
+          # -------------------------
+          # 就绪性探针
+          # -------------------------
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  REDISCLI_AUTH="${REDIS_PASSWORD}" redis-cli -h 127.0.0.1 -p 6379 ping | grep -q PONG
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+
+          # -------------------------
+          # 存活性探针
+          # -------------------------
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  REDISCLI_AUTH="${REDIS_PASSWORD}" redis-cli -h 127.0.0.1 -p 6379 ping | grep -q PONG
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+
+          # -------------------------
+          # Pod 资源限制
+          # -------------------------
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+
+            limits:
+              cpu: "500m"
+              memory: "1Gi"
+
+          volumeMounts:
+            # Redis 配置文件
+            - name: redis-config
+              mountPath: /etc/redis
+              readOnly: true
+
+            # Redis 数据持久化目录
+            - name: redis-data
+              mountPath: /data
+
+      volumes:
+        # Redis 配置来自 ConfigMap
+        - name: redis-config
+          configMap:
+            name: redis-cluster-config
+
+  # 每个 Redis Pod 自动申请一个独立 PVC
+  volumeClaimTemplates:
+    - metadata:
+        name: redis-data
+
+      spec:
+        accessModes:
+          - ReadWriteOnce
+
+        storageClassName: nfs-csi
+
+        resources:
+          requests:
+            storage: 5Gi

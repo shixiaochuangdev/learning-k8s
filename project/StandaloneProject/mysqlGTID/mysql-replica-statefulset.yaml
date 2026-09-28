@@ -1,0 +1,136 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql-replica
+  namespace: mysql-cluster
+
+spec:
+  serviceName: mysql-replica-headless
+
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: mysql
+      role: replica
+
+  template:
+    metadata:
+      labels:
+        app: mysql
+        role: replica
+
+    spec:
+      terminationGracePeriodSeconds: 60
+
+      containers:
+        - name: mysql
+
+          image: mysql:8.0.33
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: mysql
+              containerPort: 3306
+              protocol: TCP
+
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_ROOT_PASSWORD
+
+            - name: MYSQL_INITDB_SKIP_TZINFO
+              value: "1"
+
+          startupProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -ec
+                - |
+                  MYSQL_PWD="${MYSQL_ROOT_PASSWORD}" \
+                  mysqladmin ping \
+                  -h 127.0.0.1 \
+                  -uroot \
+                  --silent
+
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+
+
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -ec
+                - |
+                  MYSQL_PWD="${MYSQL_ROOT_PASSWORD}" \
+                  mysqladmin ping \
+                  -h 127.0.0.1 \
+                  -uroot \
+                  --silent
+
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -ec
+                - |
+                  MYSQL_PWD="${MYSQL_ROOT_PASSWORD}" \
+                  mysql \
+                  -h 127.0.0.1 \
+                  -uroot \
+                  -Nse "SELECT 1"
+
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+
+            limits:
+              cpu: "1"
+              memory: "2Gi"
+
+
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+
+            - name: mysql-config
+              mountPath: /etc/mysql/conf.d/zz-replication.cnf
+              subPath: my.cnf
+              readOnly: true
+
+
+      volumes:
+        - name: mysql-config
+          configMap:
+            name: mysql-replica-config
+
+
+  volumeClaimTemplates:
+    - metadata:
+        name: mysql-data
+
+      spec:
+        accessModes:
+          - ReadWriteOnce
+
+        storageClassName: nfs-csi
+
+        resources:
+          requests:
+            storage: 10Gi

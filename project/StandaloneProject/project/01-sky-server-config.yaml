@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sky-server-config
+  namespace: javaproject
+
+data:
+
+  #################################
+  # Spring Boot
+  #################################
+
+  # Spring Boot 服务端口
+  SERVER_PORT: "8080"
+
+  # 激活生产环境配置
+  SPRING_PROFILES_ACTIVE: "prod"
+
+
+  #################################
+  # MySQL
+  #################################
+
+  MYSQL_DRIVER_CLASS_NAME: "com.mysql.cj.jdbc.Driver"
+
+  # MySQL Primary Service
+  MYSQL_HOST: "mysql-primary-0.mysql-primary-headless.mysql-cluster.svc.cluster.local"
+
+  MYSQL_PORT: "3306"
+
+  MYSQL_DATABASE: "sky_take_out"
+
+
+  #################################
+  # Redis Cluster
+  #################################
+
+  REDIS_CLUSTER_NODE_0: "redis-cluster-0.redis-headless.redis-cluster.svc.cluster.local:6379"
+
+  REDIS_CLUSTER_NODE_1: "redis-cluster-1.redis-headless.redis-cluster.svc.cluster.local:6379"
+
+  REDIS_CLUSTER_NODE_2: "redis-cluster-2.redis-headless.redis-cluster.svc.cluster.local:6379"
+
+  REDIS_CLUSTER_NODE_3: "redis-cluster-3.redis-headless.redis-cluster.svc.cluster.local:6379"
+
+  REDIS_CLUSTER_NODE_4: "redis-cluster-4.redis-headless.redis-cluster.svc.cluster.local:6379"
+
+  REDIS_CLUSTER_NODE_5: "redis-cluster-5.redis-headless.redis-cluster.svc.cluster.local:6379"
+
+  REDIS_CLUSTER_MAX_REDIRECTS: "5"
+
+
+  #################################
+  # 阿里云 OSS
+  #################################
+
+  ALIOSS_ENDPOINT: "oss-cn-chengdu.aliyuncs.com"
+
+  ALIOSS_BUCKET_NAME: "shi-project-pictures"
+
+
+  #################################
+  # 微信小程序
+  #################################
+
+  WECHAT_APPID: "wx3dcc4307ee452ee5"
+
+
+  #################################
+  # 商铺
+  #################################
+
+  SHOP_ADDRESS: "深圳市宝安区创维创新谷"
+
+  SHOP_DISTANCE: "5000"

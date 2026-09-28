@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sky-front-ingress
+  namespace: javaproject
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: admin.shixiaochuang.org
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: sky-front
+            port:
+              number: 80

@@ -1,0 +1,159 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql-primary
+  namespace: mysql-cluster
+
+spec:
+  serviceName: mysql-primary-headless
+
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: mysql
+      role: primary
+
+  template:
+    metadata:
+      labels:
+        app: mysql
+        role: primary
+
+    spec:
+      terminationGracePeriodSeconds: 60
+
+      containers:
+        - name: mysql
+
+          image: mysql:8.0.33
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: mysql
+              containerPort: 3306
+              protocol: TCP
+
+          env:
+            # 官方 MySQL 镜像初始化 root 密码
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_ROOT_PASSWORD
+
+            # 跳过时区数据初始化
+            - name: MYSQL_INITDB_SKIP_TZINFO
+              value: "1"
+
+
+          #################################
+          # 启动探针
+          #################################
+          startupProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -ec
+                - |
+                  MYSQL_PWD="${MYSQL_ROOT_PASSWORD}" \
+                  mysqladmin ping \
+                  -h 127.0.0.1 \
+                  -uroot \
+                  --silent
+
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+
+
+          #################################
+          # 存活探针
+          #################################
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -ec
+                - |
+                  MYSQL_PWD="${MYSQL_ROOT_PASSWORD}" \
+                  mysqladmin ping \
+                  -h 127.0.0.1 \
+                  -uroot \
+                  --silent
+
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+
+          #################################
+          # 就绪探针
+          #################################
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -ec
+                - |
+                  MYSQL_PWD="${MYSQL_ROOT_PASSWORD}" \
+                  mysql \
+                  -h 127.0.0.1 \
+                  -uroot \
+                  -Nse "SELECT 1"
+
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+
+          #################################
+          # 资源限制
+          #################################
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+
+            limits:
+              cpu: "1"
+              memory: "2Gi"
+
+
+          #################################
+          # 数据卷
+          #################################
+          volumeMounts:
+            # 数据持久化
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+
+            # Primary 配置
+            - name: mysql-config
+              mountPath: /etc/mysql/conf.d/zz-replication.cnf
+              subPath: my.cnf
+              readOnly: true
+
+
+      volumes:
+        - name: mysql-config
+          configMap:
+            name: mysql-primary-config
+
+
+  #################################
+  # PVC
+  #################################
+  volumeClaimTemplates:
+    - metadata:
+        name: mysql-data
+
+      spec:
+        accessModes:
+          - ReadWriteOnce
+
+        storageClassName: nfs-csi
+
+        resources:
+          requests:
+            storage: 10Gi
