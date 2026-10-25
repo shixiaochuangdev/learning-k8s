@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: pushgateway
+  namespace: pushgateway-ns
+
+  labels:
+    app: pushgateway
+
+spec:
+  replicas: 1
+
+  serviceName: pushgateway-headless
+
+  selector:
+    matchLabels:
+      app: pushgateway
+
+  template:
+    metadata:
+      labels:
+        app: pushgateway
+
+    spec:
+      securityContext:
+        # 使用非 root 用户
+        runAsUser: 65534
+        runAsGroup: 65534
+
+        # 为持久化卷设置补充组
+        fsGroup: 65534
+
+      containers:
+        - name: pushgateway
+          image: prom/pushgateway:v1.11.1
+          imagePullPolicy: IfNotPresent
+
+          args:
+            # 监听端口
+            - "--web.listen-address=:9091"
+
+            # 指定持久化文件，注意这里是文件而不是目录
+            - "--persistence.file=/data/metrics.db"
+
+            # 持久化间隔
+            - "--persistence.interval=30s"
+
+          ports:
+            - name: metrics
+              containerPort: 9091
+              protocol: TCP
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+
+            limits:
+              cpu: 500m
+              memory: 256Mi
+
+          # 存活探针
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: metrics
+
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 5
+
+          # 就绪探针
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: metrics
+
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+
+          volumeMounts:
+            - name: data
+              mountPath: /data
+
+  # StatefulSet 自动创建 PVC
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+
+      spec:
+        accessModes:
+          - ReadWriteOnce
+
+        storageClassName: nfs-csi
+
+        resources:
+          requests:
+            storage: 2Gi

@@ -1,0 +1,136 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-exporter
+  namespace: node-ns
+  labels:
+    app: node-exporter
+
+spec:
+  selector:
+    matchLabels:
+      app: node-exporter
+
+  template:
+    metadata:
+      labels:
+        app: node-exporter
+
+    spec:
+      # 使用宿主机 PID 命名空间
+      hostPID: true
+
+      # 使用宿主机网络命名空间
+      hostNetwork: true
+
+      # 仅部署在 Linux 节点
+      nodeSelector:
+        kubernetes.io/os: linux
+
+      # 允许调度到控制平面节点
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+
+        # 兼容旧版本 Master 污点
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
+
+      containers:
+        - name: node-exporter
+          image: shixiaochuangk8s/node-exporter:v1.10.1
+          imagePullPolicy: IfNotPresent
+
+          args:
+            # 使用宿主机 IP 监听 9100 端口
+            - '--web.listen-address=$(HOSTIP):9100'
+
+            # 宿主机 proc 文件系统
+            - '--path.procfs=/host/proc'
+
+            # 宿主机 sys 文件系统
+            - '--path.sysfs=/host/sys'
+
+            # 宿主机根文件系统
+            - '--path.rootfs=/host/root'
+
+            # 排除系统和容器运行时的部分挂载点
+            - '--collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/containerd/.+|var/lib/kubelet/pods/.+)($|/)'
+
+            # 排除不需要统计容量的虚拟文件系统类型
+            - '--collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|mqueue|nsfs|overlay|proc|pstore|rpc_pipefs|securityfs|squashfs|sysfs|tracefs)$'
+
+          ports:
+            - name: metrics
+              containerPort: 9100
+              protocol: TCP
+
+          # 获取当前 Pod 所在节点的 IP
+          env:
+            - name: HOSTIP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+
+            limits:
+              cpu: 500m
+              memory: 256Mi
+
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            allowPrivilegeEscalation: false
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: metrics
+            periodSeconds: 10
+            timeoutSeconds: 3
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: metrics
+            periodSeconds: 30
+            timeoutSeconds: 3
+
+          volumeMounts:
+            # 宿主机 /proc
+            - name: proc
+              mountPath: /host/proc
+              readOnly: true
+
+            # 宿主机 /sys
+            - name: sys
+              mountPath: /host/sys
+              readOnly: true
+
+            # 宿主机根文件系统
+            - name: root
+              mountPath: /host/root
+              readOnly: true
+              mountPropagation: HostToContainer
+
+      volumes:
+        - name: proc
+          hostPath:
+            path: /proc
+            type: Directory
+
+        - name: sys
+          hostPath:
+            path: /sys
+            type: Directory
+
+        - name: root
+          hostPath:
+            path: /
+            type: Directory

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-init
+  namespace: mysql-monitor-ns
+
+data:
+  01-exporter.sql: |
+    -- 为已创建的 exporter 用户授予监控所需权限
+    GRANT PROCESS, REPLICATION CLIENT, SELECT
+    ON *.*
+    TO 'exporter'@'%';

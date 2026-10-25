@@ -1,0 +1,51 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pushgateway-demo
+  namespace: pushgateway-ns
+
+spec:
+  # 任务失败后的重试次数
+  backoffLimit: 2
+
+  # 完成一天后允许自动清理 Job 对象
+  ttlSecondsAfterFinished: 86400
+
+  template:
+    spec:
+      restartPolicy: Never
+
+      containers:
+        - name: batch-job
+          image: curlimages/curl:8.12.1
+          imagePullPolicy: IfNotPresent
+
+          command:
+            - /bin/sh
+            - -c
+
+          args:
+            - |
+              set -eu
+
+              echo "Start batch job..."
+
+              # 模拟任务处理
+              sleep 3
+
+              # 获取完成时间戳
+              FINISH_TIME=$(date +%s)
+
+              # Pushgateway Service 地址
+              PUSH_URL="http://pushgateway.pushgateway-ns.svc.cluster.local:9091/metrics/job/k8s_batch_demo"
+
+              # 推送最近一次成功执行的时间
+              printf '# HELP training_k8s_job_last_success_timestamp_seconds Last successful execution time.\n# TYPE training_k8s_job_last_success_timestamp_seconds gauge\ntraining_k8s_job_last_success_timestamp_seconds %s\n' \
+                "$FINISH_TIME" \
+                | curl -fsS \
+                    --retry 3 \
+                    -X PUT \
+                    --data-binary @- \
+                    "$PUSH_URL"
+
+              echo "Batch job completed."

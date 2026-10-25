@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: prometheus-ns
+
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+      scrape_timeout: 10s
+
+    scrape_configs:
+      # 1. Prometheus 自身监控
+      - job_name: "prometheus"
+        static_configs:
+          - targets:
+              - "localhost:9090"
+            labels:
+              app: "prometheus"
+
+      # 2. CoreDNS 监控
+      - job_name: "coredns"
+        static_configs:
+          - targets:
+              - "10.244.222.69:9153"
+              - "10.244.222.68:9153"
+
+      # 3. Redis Exporter
+      - job_name: "redis"
+        static_configs:
+          - targets:
+              - "redis.redis-ns.svc.cluster.local:9121"
+
+      # 4. Nginx Prometheus Exporter
+      - job_name: "nginx"
+        static_configs:
+          - targets:
+              - "nginx.nginx-ns.svc.cluster.local:9113"
+
+      # 5. MySQL Exporter
+      - job_name: "mysql"
+        static_configs:
+          - targets:
+              - "mysql.mysql-monitor-ns.svc.cluster.local:9104"

@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: prometheus
+  namespace: prometheus-ns
+  labels:
+    app: prometheus
+
+spec:
+  # 本次实验部署一个副本
+  replicas: 1
+
+  # 对应前面创建的 Headless Service
+  serviceName: prometheus-headless
+
+  selector:
+    matchLabels:
+      app: prometheus
+
+  # StatefulSet 更新策略
+  updateStrategy:
+    type: RollingUpdate
+
+  template:
+    metadata:
+      labels:
+        app: prometheus
+
+    spec:
+      # 使用前面创建的 ServiceAccount
+      serviceAccountName: prometheus
+
+      # Pod 级安全上下文
+      securityContext:
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
+
+      containers:
+        - name: prometheus
+          image: shixiaochuangk8s/prometheus:v3.5.0
+          imagePullPolicy: IfNotPresent
+
+          args:
+            # Prometheus 配置文件路径
+            - "--config.file=/etc/prometheus/prometheus.yml"
+
+            # TSDB 数据存储路径
+            - "--storage.tsdb.path=/prometheus"
+
+            # 本实验仅保留 24 小时监控数据
+            - "--storage.tsdb.retention.time=24h"
+
+            # 开启 HTTP 配置热重载接口
+            - "--web.enable-lifecycle"
+
+          ports:
+            - name: http
+              containerPort: 9090
+              protocol: TCP
+
+          # 启动探针
+          startupProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            periodSeconds: 10
+            failureThreshold: 30
+
+          # 存活探针
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # 就绪探针
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 2Gi
+
+          volumeMounts:
+            # 挂载 Prometheus 配置文件
+            - name: prometheus-config
+              mountPath: /etc/prometheus
+              readOnly: true
+
+            # 挂载 TSDB 数据目录
+            - name: prometheus-data
+              mountPath: /prometheus
+
+      volumes:
+        # ConfigMap 配置文件
+        - name: prometheus-config
+          configMap:
+            name: prometheus-config
+
+  # 为 StatefulSet Pod 自动创建 PVC
+  volumeClaimTemplates:
+    - metadata:
+        name: prometheus-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: nfs-csi
+        resources:
+          requests:
+            storage: 20Gi

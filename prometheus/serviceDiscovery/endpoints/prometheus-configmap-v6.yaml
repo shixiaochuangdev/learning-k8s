@@ -1,0 +1,150 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: prometheus-ns
+
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+      scrape_timeout: 10s
+
+    scrape_configs:
+      # 1. Prometheus 自身监控
+      - job_name: "prometheus"
+        static_configs:
+          - targets:
+              - "localhost:9090"
+            labels:
+              app: "prometheus"
+
+      # 2. CoreDNS 监控
+      - job_name: "coredns"
+        static_configs:
+          - targets:
+              - "10.244.222.69:9153"
+              - "10.244.222.68:9153"
+
+      # 3. Redis Exporter
+      - job_name: "redis"
+        static_configs:
+          - targets:
+              - "redis.redis-ns.svc.cluster.local:9121"
+
+      # 4. Nginx Prometheus Exporter
+      - job_name: "nginx"
+        static_configs:
+          - targets:
+              - "nginx.nginx-ns.svc.cluster.local:9113"
+
+      # 5. MySQL Exporter
+      - job_name: "mysql"
+        static_configs:
+          - targets:
+              - "mysql.mysql-monitor-ns.svc.cluster.local:9104"
+              
+      
+      # Kubernetes Node Exporter 监控
+      - job_name: "node-exporter"
+
+        # 通过 Kubernetes API 发现 Node 对象
+        kubernetes_sd_configs:
+          - role: node
+
+        # 标签重写
+        relabel_configs:
+          # 将 Node InternalIP 改写为采集目标地址
+          - source_labels:
+              - __meta_kubernetes_node_address_InternalIP
+            regex: (.+)
+            target_label: __address__
+            replacement: ${1}:9100
+
+          # 添加 Node 名称标签
+          - source_labels:
+              - __meta_kubernetes_node_name
+            target_label: node
+      
+      # Kubernetes cAdvisor 容器监控
+      - job_name: "cadvisor"
+
+        # kubelet 默认通过 HTTPS 暴露安全接口
+        scheme: https
+
+        # cAdvisor 指标路径
+        metrics_path: /metrics/cadvisor
+
+        # 自动发现 Kubernetes Node
+        kubernetes_sd_configs:
+          - role: node
+
+        # 使用 Pod 的 ServiceAccount Token
+        authorization:
+          type: Bearer
+          credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+
+        # 仅用于实验环境
+        tls_config:
+          insecure_skip_verify: true
+
+        # 添加 Node 标签
+        relabel_configs:
+          - source_labels:
+              - __meta_kubernetes_node_name
+            target_label: node
+      
+      - job_name: "kubelet"
+
+        kubernetes_sd_configs:
+          - role: node
+
+        scheme: https
+
+        metrics_path: /metrics
+
+        # 使用 ServiceAccount Token 认证
+        authorization:
+          type: Bearer
+          credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+
+        # 仅用于课堂实验
+        tls_config:
+          insecure_skip_verify: true
+
+        relabel_configs:
+          # 添加 Node 名称
+          - source_labels:
+              - __meta_kubernetes_node_name
+            target_label: node
+
+          # 保留 Node 标签
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+            
+      - job_name: "apiservers"
+
+        kubernetes_sd_configs:
+          - role: endpointslice
+
+        scheme: https
+
+        metrics_path: /metrics
+
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+
+        authorization:
+          type: Bearer
+          credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+
+        relabel_configs:
+          # 只保留 default 命名空间中的 kubernetes Service
+          # 并要求 EndpointSlice 端口名称为 https
+          - source_labels:
+              - __meta_kubernetes_namespace
+              - __meta_kubernetes_service_name
+              - __meta_kubernetes_endpointslice_port_name
+            action: keep
+            regex: default;kubernetes;https

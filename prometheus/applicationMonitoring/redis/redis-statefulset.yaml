@@ -1,0 +1,127 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  namespace: redis-ns
+  labels:
+    app: redis
+
+spec:
+  replicas: 1
+
+  serviceName: redis-headless
+
+  selector:
+    matchLabels:
+      app: redis
+
+  template:
+    metadata:
+      labels:
+        app: redis
+
+    spec:
+      securityContext:
+        fsGroup: 999
+
+      containers:
+        # Redis 主容器
+        - name: redis
+          image: shixiaochuangk8s/redis:7.4.2
+          imagePullPolicy: IfNotPresent
+
+          command:
+            - redis-server
+          args:
+            - /etc/redis/redis.conf
+
+          ports:
+            - name: redis
+              containerPort: 6379
+
+          env:
+            # redis-cli 使用的认证密码
+            - name: REDISCLI_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: redis-password
+
+          securityContext:
+            runAsUser: 999
+            runAsGroup: 999
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+          readinessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            periodSeconds: 10
+            timeoutSeconds: 3
+
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            periodSeconds: 30
+            timeoutSeconds: 3
+
+          volumeMounts:
+            - name: redis-config
+              mountPath: /etc/redis
+              readOnly: true
+
+            - name: redis-data
+              mountPath: /data
+
+        # Redis Exporter 辅助容器
+        - name: redis-exporter
+          image: shixiaochuangk8s/redis_exporter:v1.80.1
+          imagePullPolicy: IfNotPresent
+
+          args:
+            - "--redis.addr=redis://127.0.0.1:6379"
+
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: redis-password
+
+          ports:
+            - name: metrics
+              containerPort: 9121
+
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+
+      volumes:
+        - name: redis-config
+          secret:
+            secretName: redis-secret
+
+  volumeClaimTemplates:
+    - metadata:
+        name: redis-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: nfs-csi
+        resources:
+          requests:
+            storage: 5Gi

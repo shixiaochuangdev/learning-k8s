@@ -1,0 +1,141 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  namespace: mysql-monitor-ns
+  labels:
+    app: mysql
+
+spec:
+  replicas: 1
+
+  serviceName: mysql-headless
+
+  selector:
+    matchLabels:
+      app: mysql
+
+  template:
+    metadata:
+      labels:
+        app: mysql
+
+    spec:
+      containers:
+        # MySQL 主容器
+        - name: mysql
+          image: shixiaochuangk8s/mysql:8.0.33
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: mysql
+              containerPort: 3306
+
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: root-password
+
+            # 初始化数据库
+            - name: MYSQL_DATABASE
+              value: monitoring
+
+            # 创建 Exporter 用户
+            - name: MYSQL_USER
+              value: exporter
+
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: exporter-password
+
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+
+          startupProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - 'mysql -h 127.0.0.1 -uroot -p"$MYSQL_ROOT_PASSWORD" -e "SELECT 1"'
+            periodSeconds: 10
+            failureThreshold: 30
+            timeoutSeconds: 5
+
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - 'mysql -h 127.0.0.1 -uroot -p"$MYSQL_ROOT_PASSWORD" -e "SELECT 1"'
+            periodSeconds: 10
+            timeoutSeconds: 5
+
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - 'mysql -h 127.0.0.1 -uroot -p"$MYSQL_ROOT_PASSWORD" -e "SELECT 1"'
+            periodSeconds: 30
+            timeoutSeconds: 5
+
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+
+            - name: mysql-init
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+
+        # MySQL Exporter 辅助容器
+        - name: mysqld-exporter
+          image: prom/mysqld-exporter:v0.18.0
+          imagePullPolicy: IfNotPresent
+
+          args:
+            - "--mysqld.address=127.0.0.1:3306"
+            - "--mysqld.username=exporter"
+
+          env:
+            - name: MYSQLD_EXPORTER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: exporter-password
+
+          ports:
+            - name: metrics
+              containerPort: 9104
+
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+
+      volumes:
+        - name: mysql-init
+          configMap:
+            name: mysql-init
+
+  volumeClaimTemplates:
+    - metadata:
+        name: mysql-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: nfs-csi
+        resources:
+          requests:
+            storage: 10Gi

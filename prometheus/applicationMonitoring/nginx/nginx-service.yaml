@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  namespace: nginx-ns
+
+spec:
+  type: ClusterIP
+
+  selector:
+    app: nginx
+
+  ports:
+    # Nginx 业务接口
+    - name: http
+      port: 80
+      targetPort: http
+
+    # Exporter 指标接口
+    - name: metrics
+      port: 9113
+      targetPort: metrics

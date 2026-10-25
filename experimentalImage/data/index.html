@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Kubernetes Welcome</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            text-align: center;
+            animation: fadeIn 1.5s ease-in-out;
+        }
+
+        .box {
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 50px 70px;
+            border-radius: 14px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 0 25px rgba(0, 212, 255, 0.3);
+        }
+
+        h1 {
+            font-size: 42px;
+            margin-bottom: 25px;
+        }
+
+        h1 span {
+            color: #00d4ff;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: #cfd8dc;
+            margin-bottom: 25px;
+        }
+
+        .poem {
+            margin-top: 30px;
+            line-height: 2;
+            font-size: 18px;
+            color: #e0f7fa;
+            letter-spacing: 2px;
+        }
+
+        .author {
+            margin-top: 30px;
+            font-size: 16px;
+            color: #00e5ff;
+        }
+
+        .k8s {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #90caf9;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="box">
+            <h1>🚀 Welcome to <span>Kubernetes</span></h1>
+            <div class="subtitle">
+                代码已落地，服务已上线，集群正在全速运转
+            </div>
+            <div class="k8s">
+                Powered by Nginx · Orchestrated by Kubernetes
+            </div>
+
+            <div class="poem">
+                云海万机起，星河调度间。<br>
+                容器承天地，节点镇山川。<br>
+                代码生万象，集群定大千。<br>
+                史君挥一指，服务上青天。
+            </div>
+
+            <div class="author">
+                👨‍💻 Author: 史小创
+            </div>
+        </div>
+    </div>
+</body>
+</html>

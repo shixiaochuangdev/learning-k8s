@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: nginx-ns
+
+data:
+  default.conf: |
+    server {
+        listen 80;
+
+        server_name _;
+
+        # 普通业务访问
+        location / {
+            root /usr/share/nginx/html;
+            index index.html;
+        }
+
+        # Nginx 运行状态接口
+        location = /stub_status {
+            stub_status;
+
+            # 仅允许 Pod 本地访问
+            allow 127.0.0.1;
+            deny all;
+        }
+    }

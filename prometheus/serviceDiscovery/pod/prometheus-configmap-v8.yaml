@@ -1,0 +1,290 @@
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: prometheus-ns
+
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+      scrape_timeout: 10s
+
+    scrape_configs:
+      # ==========================================
+      # 1. Prometheus 自身监控
+      # ==========================================
+      - job_name: "prometheus"
+        static_configs:
+          - targets:
+              - "localhost:9090"
+            labels:
+              app: "prometheus"
+
+      # ==========================================
+      # 2. CoreDNS 监控
+      # ==========================================
+      - job_name: "coredns"
+        static_configs:
+          - targets:
+              - "10.244.222.69:9153"
+              - "10.244.222.68:9153"
+
+      # ==========================================
+      # 3. Redis Exporter
+      # ==========================================
+      - job_name: "redis"
+        static_configs:
+          - targets:
+              - "redis.redis-ns.svc.cluster.local:9121"
+
+      # ==========================================
+      # 4. Nginx Prometheus Exporter
+      # ==========================================
+      - job_name: "nginx"
+        static_configs:
+          - targets:
+              - "nginx.nginx-ns.svc.cluster.local:9113"
+
+      # ==========================================
+      # 5. MySQL Exporter
+      # ==========================================
+      - job_name: "mysql"
+        static_configs:
+          - targets:
+              - "mysql.mysql-monitor-ns.svc.cluster.local:9104"
+
+      # ==========================================
+      # 6. Kubernetes Node Exporter 监控
+      # ==========================================
+      - job_name: "node-exporter"
+
+        # 通过 Kubernetes API 自动发现 Node
+        kubernetes_sd_configs:
+          - role: node
+
+        relabel_configs:
+          # 1. 将 Node InternalIP 改写为采集地址
+          - source_labels:
+              - __meta_kubernetes_node_address_InternalIP
+            action: replace
+            regex: (.+)
+            target_label: __address__
+            replacement: ${1}:9100
+
+          # 2. 添加 Node 名称标签
+          - source_labels:
+              - __meta_kubernetes_node_name
+            target_label: node
+
+      # ==========================================
+      # 7. Kubernetes cAdvisor 容器监控
+      # ==========================================
+      - job_name: "cadvisor"
+
+        # Kubelet 安全接口
+        scheme: https
+        metrics_path: /metrics/cadvisor
+
+        # 自动发现 Kubernetes Node
+        kubernetes_sd_configs:
+          - role: node
+
+        # 使用 ServiceAccount Token 认证
+        authorization:
+          type: Bearer
+          credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+
+        # 仅用于课堂实验
+        tls_config:
+          insecure_skip_verify: true
+
+        relabel_configs:
+          # 添加 Node 名称标签
+          - source_labels:
+              - __meta_kubernetes_node_name
+            target_label: node
+
+      # ==========================================
+      # 8. Kubernetes Kubelet 监控
+      # ==========================================
+      - job_name: "kubelet"
+
+        kubernetes_sd_configs:
+          - role: node
+
+        scheme: https
+        metrics_path: /metrics
+
+        # 使用 ServiceAccount Token 认证
+        authorization:
+          type: Bearer
+          credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+
+        # 仅用于课堂实验
+        tls_config:
+          insecure_skip_verify: true
+
+        relabel_configs:
+          # 1. 添加 Node 名称标签
+          - source_labels:
+              - __meta_kubernetes_node_name
+            target_label: node
+
+          # 2. 保留 Node 标签
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+
+      # ==========================================
+      # 9. Kubernetes API Server 监控
+      # ==========================================
+      - job_name: "apiservers"
+
+        kubernetes_sd_configs:
+          - role: endpointslice
+
+        scheme: https
+        metrics_path: /metrics
+
+        # 使用 Kubernetes CA 证书
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+
+        # 使用 ServiceAccount Token 认证
+        authorization:
+          type: Bearer
+          credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+
+        relabel_configs:
+          # 只保留 default 命名空间的 kubernetes Service
+          # 并要求 EndpointSlice 端口名称为 https
+          - source_labels:
+              - __meta_kubernetes_namespace
+              - __meta_kubernetes_service_name
+              - __meta_kubernetes_endpointslice_port_name
+            action: keep
+            regex: default;kubernetes;https
+
+      # ==========================================
+      # 10. Kubernetes Service 自动发现
+      # ==========================================
+      - job_name: "kubernetes-services"
+
+        kubernetes_sd_configs:
+          - role: endpointslice
+
+        relabel_configs:
+          # 1. 只保留允许 Prometheus 采集的 Service
+          - source_labels:
+              - __meta_kubernetes_service_annotation_prometheus_io_scrape
+            action: keep
+            regex: "true"
+
+          # 2. 只保留 Metrics 端口
+          - source_labels:
+              - __meta_kubernetes_endpointslice_port_name
+            action: keep
+            regex: "metrics"
+
+          # 3. 从 Service 注解获取采集协议
+          - source_labels:
+              - __meta_kubernetes_service_annotation_prometheus_io_scheme
+            action: replace
+            target_label: __scheme__
+            regex: (https?)
+
+          # 4. 从 Service 注解获取指标路径
+          - source_labels:
+              - __meta_kubernetes_service_annotation_prometheus_io_path
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+
+          # 5. 将 Service 注解端口保存到临时标签
+          - source_labels:
+              - __meta_kubernetes_service_annotation_prometheus_io_port
+            action: replace
+            target_label: __tmp_metrics_port
+            regex: '([0-9]+)'
+            replacement: '$1'
+
+          # 6. 校验 EndpointSlice 端口与注解端口是否一致
+          - source_labels:
+              - __meta_kubernetes_endpointslice_port
+            action: keepequal
+            target_label: __tmp_metrics_port
+
+          # 7. 将 Service Label 映射为普通标签
+          - action: labelmap
+            regex: __meta_kubernetes_service_label_(.+)
+
+          # 8. 添加 Namespace 标签
+          - source_labels:
+              - __meta_kubernetes_namespace
+            target_label: kubernetes_namespace
+
+          # 9. 添加 Service 名称标签
+          - source_labels:
+              - __meta_kubernetes_service_name
+            target_label: kubernetes_service
+
+          # 10. 添加 Pod 名称标签
+          - source_labels:
+              - __meta_kubernetes_pod_name
+            target_label: kubernetes_pod_name
+
+      # ==========================================
+      # 11. Kubernetes Pod 自动发现
+      # ==========================================
+      - job_name: "kubernetes-pods"
+
+        # 通过 Kubernetes API 自动发现 Pod
+        kubernetes_sd_configs:
+          - role: pod
+
+        relabel_configs:
+          # 1. 只保留允许 Prometheus 采集的 Pod
+          - source_labels:
+              - __meta_kubernetes_pod_annotation_prometheus_io_scrape
+            action: keep
+            regex: "true"
+
+          # 2. 通过 Pod IP 和注解端口生成采集地址
+          - source_labels:
+              - __meta_kubernetes_pod_ip
+              - __meta_kubernetes_pod_annotation_prometheus_io_port
+            action: replace
+            regex: (.+);([0-9]+)
+            replacement: '$1:$2'
+            target_label: __address__
+
+          # 3. 从 Pod 注解获取指标路径
+          - source_labels:
+              - __meta_kubernetes_pod_annotation_prometheus_io_path
+            action: replace
+            regex: (.+)
+            target_label: __metrics_path__
+
+          # 4. 从 Pod 注解获取采集协议
+          - source_labels:
+              - __meta_kubernetes_pod_annotation_prometheus_io_scheme
+            action: replace
+            regex: (https?)
+            target_label: __scheme__
+
+          # 5. 添加 Namespace 标签
+          - source_labels:
+              - __meta_kubernetes_namespace
+            target_label: kubernetes_namespace
+
+          # 6. 添加 Pod 名称标签
+          - source_labels:
+              - __meta_kubernetes_pod_name
+            target_label: kubernetes_pod_name
+
+          # 7. 添加容器名称标签
+          - source_labels:
+              - __meta_kubernetes_pod_container_name
+            target_label: kubernetes_container_name

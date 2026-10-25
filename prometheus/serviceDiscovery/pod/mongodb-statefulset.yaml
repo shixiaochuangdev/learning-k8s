@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb
+  namespace: mongodb-ns
+
+spec:
+  replicas: 1
+
+  serviceName: mongodb-headless
+
+  selector:
+    matchLabels:
+      app: mongodb
+
+  template:
+    metadata:
+      labels:
+        app: mongodb
+
+      annotations:
+        # 允许通过 Pod 服务发现进行采集
+        prometheus.io/scrape: "true"
+
+        # Metrics 端口
+        prometheus.io/port: "9216"
+
+        # Metrics 路径
+        prometheus.io/path: "/metrics"
+
+        # 采集协议
+        prometheus.io/scheme: "http"
+
+    spec:
+      securityContext:
+        fsGroup: 999
+
+      containers:
+        # MongoDB 主容器
+        - name: mongodb
+          image: mongo:5.0.24
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: mongodb
+              containerPort: 27017
+
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 2Gi
+
+          volumeMounts:
+            - name: mongodb-data
+              mountPath: /data/db
+
+        # MongoDB Exporter
+        - name: mongodb-exporter
+          image: percona/mongodb_exporter:0.47.2
+          imagePullPolicy: IfNotPresent
+
+          args:
+            - "--collect-all"
+
+          env:
+            - name: MONGODB_URI
+              value: "mongodb://127.0.0.1:27017/admin"
+
+          ports:
+            - name: metrics
+              containerPort: 9216
+
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+
+  volumeClaimTemplates:
+    - metadata:
+        name: mongodb-data
+
+      spec:
+        storageClassName: nfs-csi
+
+        accessModes:
+          - ReadWriteOnce
+
+        resources:
+          requests:
+            storage: 10Gi

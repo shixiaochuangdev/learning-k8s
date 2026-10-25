@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: grafana
+  namespace: grafana-ns
+  labels:
+    app: grafana
+
+spec:
+  replicas: 1
+
+  serviceName: grafana-headless
+
+  selector:
+    matchLabels:
+      app: grafana
+
+  updateStrategy:
+    type: RollingUpdate
+
+  template:
+    metadata:
+      labels:
+        app: grafana
+
+    spec:
+      securityContext:
+        runAsUser: 472
+        runAsGroup: 472
+        fsGroup: 472
+        fsGroupChangePolicy: OnRootMismatch
+
+      containers:
+        - name: grafana
+          image: shixiaochuangk8s/grafana:12.0.1
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+
+          env:
+            # Grafana 管理员用户名
+            - name: GF_SECURITY_ADMIN_USER
+              value: "admin"
+
+            # 从 Secret 中读取管理员密码
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-admin
+                  key: admin-password
+
+            # Grafana 外部访问地址
+            - name: GF_SERVER_ROOT_URL
+              value: "http://grafana.shixiaochuang.org/"
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 30
+
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          volumeMounts:
+            # 挂载 Grafana 数据源配置文件目录
+            - name: grafana-datasources
+              mountPath: /etc/grafana/provisioning/datasources
+              readOnly: true
+
+            # Grafana 数据持久化目录
+            - name: grafana-data
+              mountPath: /var/lib/grafana
+
+      volumes:
+        # ConfigMap 数据源配置
+        - name: grafana-datasources
+          configMap:
+            name: grafana-datasources
+
+  # 自动为 Grafana 创建 PVC
+  volumeClaimTemplates:
+    - metadata:
+        name: grafana-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: nfs-csi
+        resources:
+          requests:
+            storage: 20Gi
